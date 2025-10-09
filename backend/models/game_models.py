@@ -280,7 +280,11 @@ class Game:
         
         # Move to next player
         self.current_player_index = (self.current_player_index + 1) % len(self.players)
-        self.current_player_id = self.players[self.current_player_index].id
+        next_player = self.players[self.current_player_index]
+        self.current_player_id = next_player.id
+        
+        # Reset the new player's turn flag so they can flip a card
+        next_player.reset_turn_flag()
         
         # Add turn change event
         self.add_event(GameEvent(

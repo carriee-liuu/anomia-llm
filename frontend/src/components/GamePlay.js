@@ -42,14 +42,36 @@ const GamePlay = () => {
   // Check if it's the current player's turn
   const isMyTurn = () => {
     if (!gameState || !currentPlayer) return false;
-    return gameState.currentPlayerId === currentPlayer.id && gameState.status === 'active';
+    
+    console.log('🔍 isMyTurn check:');
+    console.log('🔍 gameState.currentPlayerId:', gameState.currentPlayerId);
+    console.log('🔍 currentPlayer.id:', currentPlayer.id);
+    console.log('🔍 gameState.status:', gameState.status);
+    console.log('🔍 Are they equal?', gameState.currentPlayerId === currentPlayer.id);
+    console.log('🔍 Is status active?', gameState.status === 'active');
+    
+    const result = gameState.currentPlayerId === currentPlayer.id && gameState.status === 'active';
+    console.log('🔍 Final isMyTurn result:', result);
+    
+    return result;
   };
 
   // Check if player has already flipped this turn
   const hasFlippedThisTurn = () => {
     if (!gameState || !currentPlayer) return false;
+    
+    console.log('🔍 hasFlippedThisTurn check:');
+    console.log('🔍 currentPlayer:', currentPlayer);
+    console.log('🔍 gameState.players:', gameState.players);
+    
     const player = gameState.players.find(p => p.id === currentPlayer.id);
-    return player?.hasFlippedThisTurn || false;
+    console.log('🔍 Found player in gameState:', player);
+    console.log('🔍 player?.hasFlippedThisTurn:', player?.hasFlippedThisTurn);
+    
+    const result = player?.hasFlippedThisTurn || false;
+    console.log('🔍 Final hasFlippedThisTurn result:', result);
+    
+    return result;
   };
 
   // Handle card flip

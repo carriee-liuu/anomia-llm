@@ -223,36 +223,15 @@ async def handle_flip_card(socket_id: str, room_code: str, message: dict):
         result = game_service.flip_card(room_code, player_id)
         
         if result["success"]:
-            # Get the game object to check for faceoffs
-            game = game_service.active_games.get(room_code)
-            if game:
-                matches = game.find_matching_players(player_id)
-                if matches:
-                    # Faceoff detected! Set the current faceoff
-                    game.current_faceoff = matches[0]
-                    game.status = GameStatus.FACEOFF
-                    
-                    await broadcast_to_room(room_code, {
-                        "type": "faceoffDetected",
-                        "data": matches[0].to_dict()
-                    })
-                    logger.info(f"⚡ Faceoff detected between {matches[0].player1_id} and {matches[0].player2_id}")
-                else:
-                    # No match detected - advance to next player's turn
-                    advance_result = game_service.advance_turn(room_code)
-                    if advance_result["success"]:
-                        await broadcast_to_room(room_code, {
-                            "type": "turnAdvanced",
-                            "data": advance_result
-                        })
-                        logger.info(f"🔄 Turn advanced to next player in room {room_code}")
-                    else:
-                        logger.error(f"Failed to advance turn: {advance_result['error']}")
-            
+            # The flip_card method now handles faceoff detection and turn advancement automatically
+            # Just broadcast the updated game state
+            logger.info(f"📢 Broadcasting cardFlipped message to room {room_code}")
+            logger.info(f"📢 Message data: {result}")
             await broadcast_to_room(room_code, {
                 "type": "cardFlipped",
                 "data": result
             })
+            logger.info(f"✅ cardFlipped message broadcasted successfully")
         else:
             await send_error(socket_id, result["error"])
             
@@ -345,9 +324,18 @@ async def send_error(socket_id: str, error_message: str):
 
 async def broadcast_to_room(room_code: str, message: dict):
     """Broadcast a message to all players in a room"""
+    logger.info(f"📢 broadcast_to_room called for room {room_code}")
+    logger.info(f"📢 room_connections keys: {list(room_connections.keys())}")
+    logger.info(f"📢 room_connections[{room_code}]: {room_connections.get(room_code, 'NOT FOUND')}")
+    
     if room_code in room_connections:
+        logger.info(f"📢 Broadcasting to {len(room_connections[room_code])} connections")
         for socket_id in room_connections[room_code]:
+            logger.info(f"📢 Sending message to socket {socket_id}")
             await send_message(socket_id, message)
+        logger.info(f"✅ Broadcast completed for room {room_code}")
+    else:
+        logger.warning(f"⚠️ Room {room_code} not found in room_connections")
 
 if __name__ == "__main__":
     uvicorn.run(

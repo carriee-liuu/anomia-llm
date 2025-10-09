@@ -180,6 +180,11 @@ export const GameProvider = ({ children }) => {
             case 'roomJoined':
               console.log('🎯 roomJoined received:', message.data);
               dispatch({ type: 'SET_ROOM', payload: message.data.room });
+              // Set the current player with the proper backend-assigned ID
+              if (message.data.player) {
+                console.log('✅ Setting current player from roomJoined:', message.data.player);
+                dispatch({ type: 'SET_PLAYER', payload: message.data.player });
+              }
               break;
               
             case 'playerJoined':
@@ -307,22 +312,18 @@ export const GameProvider = ({ children }) => {
         console.log('✅ Dispatching SET_ROOM for join (initial state)');
         dispatch({ type: 'SET_ROOM', payload: room });
         
-        // Find or create player
+        // Find existing player or wait for backend to assign proper ID
         let player = room.players.find(p => p.name === playerName);
         if (!player) {
-          console.log('🆕 Creating new player for:', playerName);
-          player = {
-            id: `temp_${Date.now()}`,
-            name: playerName,
-            isHost: false
-          };
+          console.log('⏳ Player not found in room yet, waiting for WebSocket to assign proper ID');
+          // Don't create a temporary player - wait for backend to assign proper ID
+          // The WebSocket roomJoined message will handle setting the correct player
         } else {
           console.log('👤 Found existing player:', player);
+          // Set player info only if we found an existing player
+          console.log('✅ Dispatching SET_PLAYER for existing player');
+          dispatch({ type: 'SET_PLAYER', payload: player });
         }
-        
-        // Set player info (this is OK since it's about the user)
-        console.log('✅ Dispatching SET_PLAYER for join');
-        dispatch({ type: 'SET_PLAYER', payload: player });
         
         // Don't trigger fallback immediately - let WebSocket work first
         console.log('⏳ Waiting for WebSocket to send join message...');
