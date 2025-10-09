@@ -68,7 +68,7 @@ const GamePlay = () => {
     console.log('🔍 Found player in gameState:', player);
     console.log('🔍 player?.hasFlippedThisTurn:', player?.hasFlippedThisTurn);
     
-    const result = player?.hasFlippedThisTurn || false;
+    const result = (player?.hasFlippedThisTurn) || false;
     console.log('🔍 Final hasFlippedThisTurn result:', result);
     
     return result;
@@ -76,7 +76,7 @@ const GamePlay = () => {
 
   // Handle card flip
   const handleFlipCard = async () => {
-    if (isFlipping || !isMyTurn() || hasFlippedThisTurn()) return;
+    if ((isFlipping) || (!isMyTurn()) || (hasFlippedThisTurn())) return;
     
     setIsFlipping(true);
     try {
