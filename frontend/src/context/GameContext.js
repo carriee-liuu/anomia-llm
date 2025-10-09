@@ -120,7 +120,6 @@ const GameContext = createContext();
 // Provider component
 export const GameProvider = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const [isCreatingSocket, setIsCreatingSocket] = useState(false);
   const currentSocketRef = useRef(null);
   const hasCreatedSocketRef = useRef(false);
   const navigate = useNavigate();
@@ -247,7 +246,7 @@ export const GameProvider = ({ children }) => {
         }
       };
     }
-  }, [state.currentRoom?.roomCode]); // Only run when roomCode changes
+  }, [state.currentRoom?.roomCode, navigate, state.socket]); // Include all dependencies
 
   // Actions
   const actions = {
