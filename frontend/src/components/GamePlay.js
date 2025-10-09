@@ -280,7 +280,7 @@ const GamePlay = () => {
             <div className="text-lg text-gray-300 mb-6">
               <div className="mb-2">First to shout the opponent's category wins!</div>
               <div className="text-sm text-yellow-400">
-                {currentPlayer && (faceoff.player1 === currentPlayer.id || faceoff.player2 === currentPlayer.id) 
+                {(currentPlayer) && ((faceoff.player1 === currentPlayer.id) || (faceoff.player2 === currentPlayer.id)) 
                   ? "Click below if you lost the faceoff"
                   : "Waiting for players to resolve the faceoff..."
                 }
