@@ -49,10 +49,11 @@ class Player:
     name: str
     is_host: bool = False
     score: int = 0
-    cards: List[Card] = field(default_factory=list)
-    current_card: Optional[Card] = None
+    cards: List[Card] = field(default_factory=list)  # All cards player has collected
+    visible_cards: List[Card] = field(default_factory=list)  # Stack of cards currently visible (face-up)
     is_ready: bool = False
     socket_id: Optional[str] = None
+    has_flipped_this_turn: bool = False  # Track if player has flipped this turn
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
@@ -62,10 +63,32 @@ class Player:
             "isHost": self.is_host,
             "score": self.score,
             "cards": [card.to_dict() for card in self.cards],
-            "currentCard": self.current_card.to_dict() if self.current_card else None,
+            "visibleCards": [card.to_dict() for card in self.visible_cards],
             "isReady": self.is_ready,
-            "socketId": self.socket_id
+            "socketId": self.socket_id,
+            "hasFlippedThisTurn": self.has_flipped_this_turn
         }
+    
+    def add_card_to_stack(self, card: Card) -> None:
+        """Add a new card to the visible stack"""
+        self.visible_cards.append(card)
+        self.cards.append(card)
+    
+    def get_top_card(self) -> Optional[Card]:
+        """Get the top card from the visible stack"""
+        return self.visible_cards[-1] if self.visible_cards else None
+    
+    def remove_top_card(self) -> Optional[Card]:
+        """Remove and return the top card from the visible stack"""
+        return self.visible_cards.pop() if self.visible_cards else None
+    
+    def has_visible_cards(self) -> bool:
+        """Check if player has any visible cards"""
+        return len(self.visible_cards) > 0
+    
+    def reset_turn_flag(self) -> None:
+        """Reset the has_flipped_this_turn flag for next turn"""
+        self.has_flipped_this_turn = False
 
 
 @dataclass
@@ -169,24 +192,29 @@ class Game:
     def find_matching_players(self, current_player_id: str) -> List[Faceoff]:
         """Find players with matching shapes"""
         current_player = self.get_player(current_player_id)
-        if not current_player or not current_player.current_card:
+        if not current_player or not current_player.has_visible_cards():
             return []
         
         faceoffs = []
-        current_shape = current_player.current_card.shape
+        current_top_card = current_player.get_top_card()
+        if not current_top_card:
+            return []
+        
+        current_shape = current_top_card.shape
         
         for other_player in self.players:
             if (other_player.id != current_player_id and 
-                other_player.current_card and 
-                other_player.current_card.shape == current_shape):
+                other_player.has_visible_cards()):
                 
-                faceoffs.append(Faceoff(
-                    player1_id=current_player_id,
-                    player2_id=other_player.id,
-                    shape=current_shape,
-                    player1_card=current_player.current_card,
-                    player2_card=other_player.current_card
-                ))
+                other_top_card = other_player.get_top_card()
+                if other_top_card and other_top_card.shape == current_shape:
+                    faceoffs.append(Faceoff(
+                        player1_id=current_player_id,
+                        player2_id=other_player.id,
+                        shape=current_shape,
+                        player1_card=current_top_card,
+                        player2_card=other_top_card
+                    ))
         
         return faceoffs
     
@@ -196,7 +224,7 @@ class Game:
             return None
         
         loser = self.get_player(loser_id)
-        if not loser or not loser.current_card:
+        if not loser or not loser.has_visible_cards():
             return None
         
         # Find the winner (the other player in the faceoff)
@@ -207,9 +235,11 @@ class Game:
         if not winner:
             return None
         
-        # Transfer the card
-        transferred_card = loser.current_card
-        loser.current_card = None
+        # Transfer the top card from loser to winner
+        transferred_card = loser.remove_top_card()
+        if not transferred_card:
+            return None
+            
         winner.cards.append(transferred_card)
         winner.score += 1
         

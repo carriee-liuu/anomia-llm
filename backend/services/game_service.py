@@ -77,9 +77,10 @@ class GameService:
                     is_host=room_player.get("isHost", False),
                     score=0,
                     cards=[],
-                    current_card=None,
+                    visible_cards=[],
                     is_ready=False,
-                    socket_id=room_player.get("socketId")
+                    socket_id=room_player.get("socketId"),
+                    has_flipped_this_turn=False
                 )
                 game.add_player(player)
             
@@ -137,8 +138,8 @@ class GameService:
                     "error": f"It's not {player.name}'s turn. Current turn: {game.current_player_id}"
                 }
             
-            # Check if player already has a current card (one card per turn)
-            if player.current_card is not None:
+            # Check if player already flipped this turn (one card per turn)
+            if player.has_flipped_this_turn:
                 return {
                     "success": False,
                     "error": f"{player.name} has already flipped a card this turn"
@@ -150,8 +151,8 @@ class GameService:
                 game.deck = self._generate_initial_deck(len(game.players))
             
             new_card = game.deck.pop()
-            player.current_card = new_card
-            player.cards.append(new_card)
+            player.add_card_to_stack(new_card)
+            player.has_flipped_this_turn = True
             
             # Add card flip event
             game.add_event(GameEvent(
@@ -185,10 +186,10 @@ class GameService:
                     "error": "Game not found"
                 }
             
-            # Clear current player's card for next turn
+            # Reset current player's turn flag for next turn
             current_player = game.get_player(game.current_player_id)
             if current_player:
-                current_player.current_card = None
+                current_player.reset_turn_flag()
             
             # Advance to next player
             next_player = game.next_turn()
@@ -360,13 +361,13 @@ class GameService:
             if not result:
                 return {"success": False, "error": "Could not resolve faceoff"}
             
-            # Clear both players' current cards after faceoff
+            # Reset both players' turn flags after faceoff
             winner = game.get_player(result['winner']['id'])
             loser = game.get_player(result['loser']['id'])
             if winner:
-                winner.current_card = None
+                winner.reset_turn_flag()
             if loser:
-                loser.current_card = None
+                loser.reset_turn_flag()
             
             # Advance turn after faceoff resolution
             next_player = game.next_turn()
