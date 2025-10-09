@@ -160,6 +160,19 @@ class GameService:
                 data={"card": new_card.to_dict()}
             ))
             
+            # Check for faceoffs after card flip
+            faceoffs = game.find_matching_players(player_id)
+            if faceoffs:
+                # Start faceoff if matches found
+                game.current_faceoff = faceoffs[0]  # Take first faceoff
+                game.status = GameStatus.FACEOFF
+                logger.info(f"Faceoff started between {faceoffs[0].player1_id} and {faceoffs[0].player2_id}")
+            else:
+                # No faceoff - advance turn automatically
+                next_player = game.next_turn()
+                if next_player:
+                    logger.info(f"Turn advanced to {next_player.name} after {player.name} flipped card")
+            
             logger.info(f"Card flipped for player {player.name} in room {room_code}")
             
             return {
