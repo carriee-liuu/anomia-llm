@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
+import AnomiaShape from './AnomiaShape';
 import { 
   Play, 
   Users, 
@@ -293,15 +294,12 @@ const GamePlay = () => {
             {/* Player 1 Card */}
             <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6">
               <div className="card-content">
-                <div className="text-6xl mb-4">
-                  {faceoff.player1Card?.shape === 'circle' && '⭕'}
-                  {faceoff.player1Card?.shape === 'square' && '⬜'}
-                  {faceoff.player1Card?.shape === 'triangle' && '🔺'}
-                  {faceoff.player1Card?.shape === 'diamond' && '💎'}
-                  {faceoff.player1Card?.shape === 'star' && '⭐'}
-                  {faceoff.player1Card?.shape === 'heart' && '❤️'}
-                  {faceoff.player1Card?.shape === 'hexagon' && '⬡'}
-                  {faceoff.player1Card?.shape === 'pentagon' && '⬟'}
+                <div className="mb-4">
+                  <AnomiaShape 
+                    shape={faceoff.player1Card?.shape} 
+                    size={80} 
+                    color="#ffffff" 
+                  />
                 </div>
                 <div className="text-xl font-bold text-white mb-2">{player1?.name}</div>
                 <div className="text-lg text-gray-300">{faceoff.player1Card?.category}</div>
@@ -325,15 +323,12 @@ const GamePlay = () => {
             {/* Player 2 Card */}
             <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6">
               <div className="card-content">
-                <div className="text-6xl mb-4">
-                  {faceoff.player2Card?.shape === 'circle' && '⭕'}
-                  {faceoff.player2Card?.shape === 'square' && '⬜'}
-                  {faceoff.player2Card?.shape === 'triangle' && '🔺'}
-                  {faceoff.player2Card?.shape === 'diamond' && '💎'}
-                  {faceoff.player2Card?.shape === 'star' && '⭐'}
-                  {faceoff.player2Card?.shape === 'heart' && '❤️'}
-                  {faceoff.player2Card?.shape === 'hexagon' && '⬡'}
-                  {faceoff.player2Card?.shape === 'pentagon' && '⬟'}
+                <div className="mb-4">
+                  <AnomiaShape 
+                    shape={faceoff.player2Card?.shape} 
+                    size={80} 
+                    color="#ffffff" 
+                  />
                 </div>
                 <div className="text-xl font-bold text-white mb-2">{player2?.name}</div>
                 <div className="text-lg text-gray-300">{faceoff.player2Card?.category}</div>
@@ -435,15 +430,12 @@ const GamePlay = () => {
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <div className="text-6xl mb-4">
-                      {getCurrentPlayerCard().shape === 'circle' && '⭕'}
-                      {getCurrentPlayerCard().shape === 'square' && '⬜'}
-                      {getCurrentPlayerCard().shape === 'triangle' && '🔺'}
-                      {getCurrentPlayerCard().shape === 'diamond' && '💎'}
-                      {getCurrentPlayerCard().shape === 'star' && '⭐'}
-                      {getCurrentPlayerCard().shape === 'heart' && '❤️'}
-                      {getCurrentPlayerCard().shape === 'hexagon' && '⬡'}
-                      {getCurrentPlayerCard().shape === 'pentagon' && '⬟'}
+                    <div className="mb-4">
+                      <AnomiaShape 
+                        shape={getCurrentPlayerCard().shape} 
+                        size={80} 
+                        color="#ffffff" 
+                      />
                     </div>
                     <h4 className="text-2xl font-bold text-white mb-2">
                       {getCurrentPlayerCard().category}
