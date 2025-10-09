@@ -141,7 +141,10 @@ class Game:
     current_player_index: int = 0  # Index in players list for turn order
     game_history: List[GameEvent] = field(default_factory=list)
     started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
     last_activity: datetime = field(default_factory=datetime.now)
+    final_scores: Optional[List[Dict[str, Any]]] = None
+    winner: Optional[Dict[str, Any]] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
@@ -156,7 +159,10 @@ class Game:
             "currentPlayerIndex": self.current_player_index,
             "gameHistory": [event.to_dict() for event in self.game_history],
             "startedAt": self.started_at.isoformat() if self.started_at else None,
-            "lastActivity": self.last_activity.isoformat()
+            "endedAt": self.ended_at.isoformat() if self.ended_at else None,
+            "lastActivity": self.last_activity.isoformat(),
+            "finalScores": self.final_scores,
+            "winner": self.winner
         }
     
     def get_player(self, player_id: str) -> Optional[Player]:

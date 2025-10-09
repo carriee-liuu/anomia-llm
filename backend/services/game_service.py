@@ -224,7 +224,7 @@ class GameService:
                     "error": "Game not found"
                 }
             
-            player = next((p for p in game["players"] if p["id"] == player_id), None)
+            player = game.get_player(player_id)
             if not player:
                 return {
                     "success": False,
@@ -236,17 +236,16 @@ class GameService:
             
             if is_valid:
                 # Award points
-                player["score"] += self.game_config["points_per_win"]
+                player.score += self.game_config["points_per_win"]
                 
                 # Update game state
-                game["lastActivity"] = datetime.now().isoformat()
-                self.active_games[room_code] = game
+                game.last_activity = datetime.now()
                 
-                logger.info(f"Player {player['name']} got a point for answer: {answer}")
+                logger.info(f"Player {player.name} got a point for answer: {answer}")
                 
                 return {
                     "success": True,
-                    "gameState": game,
+                    "gameState": game.to_dict(),
                     "isValidAnswer": True,
                     "playerId": player_id,
                     "message": "Answer accepted! +1 point"
@@ -254,7 +253,7 @@ class GameService:
             else:
                 return {
                     "success": True,
-                    "gameState": game,
+                    "gameState": game.to_dict(),
                     "isValidAnswer": False,
                     "playerId": player_id,
                     "message": "Answer not accepted"
@@ -269,33 +268,34 @@ class GameService:
     
     def get_game_state(self, room_code: str) -> Optional[Dict[str, Any]]:
         """Get current game state"""
-        return self.active_games.get(room_code)
+        game = self.active_games.get(room_code)
+        return game.to_dict() if game else None
     
     def end_game(self, room_code: str) -> bool:
         """End a game and clean up"""
         try:
             if room_code in self.active_games:
                 game = self.active_games[room_code]
-                game["status"] = "completed"
-                game["endedAt"] = datetime.now().isoformat()
+                game.status = GameStatus.COMPLETED
+                game.ended_at = datetime.now()
                 
                 # Calculate final scores
                 final_scores = [
                     {
-                        "playerId": player["id"],
-                        "name": player["name"],
-                        "finalScore": player["score"]
+                        "playerId": player.id,
+                        "name": player.name,
+                        "finalScore": player.score
                     }
-                    for player in game["players"]
+                    for player in game.players
                 ]
                 
                 # Sort by score (highest first)
                 final_scores.sort(key=lambda x: x["finalScore"], reverse=True)
                 
-                game["finalScores"] = final_scores
-                game["winner"] = final_scores[0] if final_scores else None
+                game.final_scores = final_scores
+                game.winner = final_scores[0] if final_scores else None
                 
-                logger.info(f"Game ended for room {room_code}. Winner: {game['winner']['name'] if game['winner'] else 'None'}")
+                logger.info(f"Game ended for room {room_code}. Winner: {game.winner['name'] if game.winner else 'None'}")
                 
                 return True
             
@@ -334,7 +334,7 @@ class GameService:
             for i in range(self.game_config["cards_per_player"]):
                 if len(game.deck) > 0:
                     card = game.deck.pop()
-                    player.cards.append(card)
+                    player.add_card_to_deck(card)
     
     def _shuffle_deck(self, deck: List[Card]) -> List[Card]:
         """Shuffle deck using Fisher-Yates algorithm"""
@@ -403,8 +403,8 @@ class GameService:
     def get_game_stats(self) -> Dict[str, Any]:
         """Get game statistics for monitoring"""
         active_games = len(self.active_games)
-        total_players = sum(len(game["players"]) for game in self.active_games.values())
-        completed_games = len([g for g in self.active_games.values() if g["status"] == "completed"])
+        total_players = sum(len(game.players) for game in self.active_games.values())
+        completed_games = len([g for g in self.active_games.values() if g.status == GameStatus.COMPLETED])
         
         return {
             "activeGames": active_games,
