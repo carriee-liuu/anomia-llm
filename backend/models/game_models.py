@@ -52,6 +52,7 @@ class Player:
     cards: List[Card] = field(default_factory=list)
     current_card: Optional[Card] = None
     is_ready: bool = False
+    socket_id: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
@@ -62,7 +63,8 @@ class Player:
             "score": self.score,
             "cards": [card.to_dict() for card in self.cards],
             "currentCard": self.current_card.to_dict() if self.current_card else None,
-            "isReady": self.is_ready
+            "isReady": self.is_ready,
+            "socketId": self.socket_id
         }
 
 

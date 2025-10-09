@@ -78,7 +78,8 @@ class GameService:
                     score=0,
                     cards=[],
                     current_card=None,
-                    is_ready=False
+                    is_ready=False,
+                    socket_id=room_player.get("socketId")
                 )
                 game.add_player(player)
             
