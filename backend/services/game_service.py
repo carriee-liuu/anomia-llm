@@ -164,8 +164,7 @@ class GameService:
             faceoffs = game.find_matching_players(player_id)
             if faceoffs:
                 # Start faceoff if matches found
-                game.current_faceoff = faceoffs[0]  # Take first faceoff
-                game.status = GameStatus.FACEOFF
+                game.start_faceoff(faceoffs[0])  # Use new start_faceoff method
                 logger.info(f"Faceoff started between {faceoffs[0].player1_id} and {faceoffs[0].player2_id}")
             else:
                 # No faceoff - advance turn automatically
@@ -199,9 +198,10 @@ class GameService:
                 }
             
             # Reset current player's turn flag for next turn
-            current_player = game.get_player(game.current_player_id)
-            if current_player:
-                current_player.reset_turn_flag()
+            if game.current_player_id:
+                current_player = game.get_player(game.current_player_id)
+                if current_player:
+                    current_player.reset_turn_flag()
             
             # Advance to next player
             next_player = game.next_turn()
@@ -303,7 +303,7 @@ class GameService:
                 ]
                 
                 # Sort by score (highest first)
-                final_scores.sort(key=lambda x: x["finalScore"], reverse=True)
+                final_scores.sort(key=lambda x: x["finalScore"], reverse=True)  # type: ignore
                 
                 game.final_scores = final_scores
                 game.winner = final_scores[0] if final_scores else None
@@ -383,8 +383,8 @@ class GameService:
             if loser:
                 loser.reset_turn_flag()
             
-            # Advance turn after faceoff resolution
-            next_player = game.next_turn()
+            # Continue turn from where it left off before faceoff (official Anomia rules)
+            next_player = game.continue_turn_after_faceoff()
             if next_player:
                 result['nextPlayer'] = next_player.to_dict()
                 result['message'] = f"Faceoff resolved! {result['winner']['name']} won. Turn passed to {next_player.name}"

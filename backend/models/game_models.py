@@ -139,6 +139,8 @@ class Game:
     current_faceoff: Optional[Faceoff] = None
     current_player_id: Optional[str] = None  # Track whose turn it is
     current_player_index: int = 0  # Index in players list for turn order
+    pre_faceoff_player_id: Optional[str] = None  # Track whose turn it was before faceoff
+    pre_faceoff_player_index: int = 0  # Track player index before faceoff
     game_history: List[GameEvent] = field(default_factory=list)
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
@@ -157,6 +159,8 @@ class Game:
             "currentFaceoff": self.current_faceoff.to_dict() if self.current_faceoff else None,
             "currentPlayerId": self.current_player_id,
             "currentPlayerIndex": self.current_player_index,
+            "preFaceoffPlayerId": self.pre_faceoff_player_id,
+            "preFaceoffPlayerIndex": self.pre_faceoff_player_index,
             "gameHistory": [event.to_dict() for event in self.game_history],
             "startedAt": self.started_at.isoformat() if self.started_at else None,
             "endedAt": self.ended_at.isoformat() if self.ended_at else None,
@@ -221,8 +225,31 @@ class Game:
         
         return faceoffs
     
+    def start_faceoff(self, faceoff: Faceoff) -> None:
+        """Start a faceoff and save the current turn state"""
+        # Save current turn state before faceoff
+        self.pre_faceoff_player_id = self.current_player_id
+        self.pre_faceoff_player_index = self.current_player_index
+        
+        # Set faceoff state
+        self.current_faceoff = faceoff
+        self.status = GameStatus.FACEOFF
+        
+        # Add faceoff event
+        self.add_event(GameEvent(
+            event_type="faceoff_started",
+            player_id=self.current_player_id,
+            data={
+                "player1": faceoff.player1_id,
+                "player2": faceoff.player2_id,
+                "shape": faceoff.shape.value,
+                "preFaceoffPlayer": self.pre_faceoff_player_id
+            }
+        ))
+        
+        self.last_activity = datetime.now()
+    
     def resolve_faceoff(self, loser_id: str) -> Optional[Dict[str, Any]]:
-        """Resolve a faceoff by transferring card from loser to winner"""
         if not self.current_faceoff:
             return None
         
@@ -268,6 +295,45 @@ class Game:
             "transferredCard": transferred_card.to_dict(),
             "gameState": self.to_dict()
         }
+    
+    def continue_turn_after_faceoff(self) -> Optional[Player]:
+        """Continue turn from where it left off before faceoff (official Anomia rules)"""
+        if not self.pre_faceoff_player_id:
+            # Fallback to normal turn advancement
+            return self.next_turn()
+        
+        # Find the next player in clockwise order from the pre-faceoff player
+        pre_faceoff_index = self.pre_faceoff_player_index
+        
+        # Move to next player in clockwise order
+        next_index = (pre_faceoff_index + 1) % len(self.players)
+        next_player = self.players[next_index]
+        
+        # Update current turn state
+        self.current_player_index = next_index
+        self.current_player_id = next_player.id
+        
+        # Reset the new player's turn flag
+        next_player.reset_turn_flag()
+        
+        # Add turn continuation event
+        self.add_event(GameEvent(
+            event_type="turn_continued_after_faceoff",
+            player_id=self.current_player_id,
+            data={
+                "preFaceoffPlayer": self.pre_faceoff_player_id,
+                "currentPlayer": self.current_player_id,
+                "preFaceoffIndex": pre_faceoff_index,
+                "currentIndex": next_index
+            }
+        ))
+        
+        # Clear pre-faceoff state
+        self.pre_faceoff_player_id = None
+        self.pre_faceoff_player_index = 0
+        
+        self.last_activity = datetime.now()
+        return next_player
     
     def is_player_turn(self, player_id: str) -> bool:
         """Check if it's the specified player's turn"""
