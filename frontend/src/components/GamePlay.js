@@ -69,17 +69,17 @@ const GamePlay = () => {
 
   // Swipe gesture handlers
   const handleTouchStart = (e, playerId) => {
-    if (!faceoff || faceoff.player1 !== playerId && faceoff.player2 !== playerId) return;
+    if (!faceoff || (faceoff.player1 !== playerId && faceoff.player2 !== playerId)) return;
     setSwipeStart(e.touches[0].clientY);
   };
 
   const handleTouchMove = (e, playerId) => {
-    if (!faceoff || faceoff.player1 !== playerId && faceoff.player2 !== playerId) return;
+    if (!faceoff || (faceoff.player1 !== playerId && faceoff.player2 !== playerId)) return;
     setSwipeEnd(e.touches[0].clientY);
   };
 
   const handleTouchEnd = (e, playerId) => {
-    if (!faceoff || faceoff.player1 !== playerId && faceoff.player2 !== playerId) return;
+    if (!faceoff || (faceoff.player1 !== playerId && faceoff.player2 !== playerId)) return;
     
     if (!swipeStart || !swipeEnd) return;
     
