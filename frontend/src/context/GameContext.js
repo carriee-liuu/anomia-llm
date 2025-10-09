@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Game state reducer
