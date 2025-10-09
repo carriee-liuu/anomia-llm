@@ -224,6 +224,7 @@ export const GameProvider = ({ children }) => {
               console.log('🏆 Faceoff resolved:', message.data);
               dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
               dispatch({ type: 'CLEAR_FACEOFF' });
+              dispatch({ type: 'SET_GAME_STATUS', payload: message.data.gameState.status });
               break;
               
             case 'error':
