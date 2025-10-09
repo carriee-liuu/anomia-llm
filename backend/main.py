@@ -223,8 +223,20 @@ async def handle_flip_card(socket_id: str, room_code: str, message: dict):
         result = game_service.flip_card(room_code, player_id)
         
         if result["success"]:
-            # The flip_card method now handles faceoff detection and turn advancement automatically
-            # Just broadcast the updated game state
+            # Check if a faceoff was detected and send separate message
+            game_state = result.get("gameState", {})
+            if game_state.get("status") == "faceoff" and game_state.get("currentFaceoff"):
+                logger.info(f"⚡ Faceoff detected! Broadcasting faceoffDetected message to room {room_code}")
+                await broadcast_to_room(room_code, {
+                    "type": "faceoffDetected",
+                    "data": {
+                        "faceoff": game_state["currentFaceoff"],
+                        "gameState": game_state
+                    }
+                })
+                logger.info(f"✅ faceoffDetected message broadcasted successfully")
+            
+            # Always broadcast the updated game state
             logger.info(f"📢 Broadcasting cardFlipped message to room {room_code}")
             logger.info(f"📢 Message data: {result}")
             await broadcast_to_room(room_code, {

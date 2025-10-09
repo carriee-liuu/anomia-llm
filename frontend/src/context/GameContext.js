@@ -215,7 +215,9 @@ export const GameProvider = ({ children }) => {
               
             case 'faceoffDetected':
               console.log('⚡ Faceoff detected:', message.data);
-              dispatch({ type: 'SET_FACEOFF', payload: message.data });
+              dispatch({ type: 'SET_FACEOFF', payload: message.data.faceoff });
+              dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
+              dispatch({ type: 'SET_GAME_STATUS', payload: 'faceoff' });
               break;
               
             case 'faceoffResolved':

@@ -32,9 +32,9 @@ const GamePlay = () => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [showAnswerInput, setShowAnswerInput] = useState(false);
   
-  // Swipe gesture state
-  const [swipeStart, setSwipeStart] = useState(null);
-  const [swipeEnd, setSwipeEnd] = useState(null);
+  // Swipe gesture state - REMOVED (using buttons instead)
+  // const [swipeStart, setSwipeStart] = useState(null);
+  // const [swipeEnd, setSwipeEnd] = useState(null);
   
   const answerInputRef = useRef(null);
   const timerRef = useRef(null);
@@ -89,34 +89,11 @@ const GamePlay = () => {
     }
   };
 
-  // Swipe gesture handlers
-  const handleTouchStart = (e, playerId) => {
-    if (!faceoff || (faceoff.player1 !== playerId && faceoff.player2 !== playerId)) return;
-    setSwipeStart(e.touches[0].clientY);
-  };
-
-  const handleTouchMove = (e, playerId) => {
-    if (!faceoff || (faceoff.player1 !== playerId && faceoff.player2 !== playerId)) return;
-    setSwipeEnd(e.touches[0].clientY);
-  };
-
-  const handleTouchEnd = (e, playerId) => {
-    if (!faceoff || (faceoff.player1 !== playerId && faceoff.player2 !== playerId)) return;
-    
-    if (!swipeStart || !swipeEnd) return;
-    
-    const swipeDistance = swipeStart - swipeEnd;
-    const minSwipeDistance = 50; // Minimum swipe distance
-    
-    if (swipeDistance > minSwipeDistance) {
-      // Swipe up detected - this player lost
-      console.log('🏆 Player swiped up - resolving faceoff for loser:', playerId);
-      resolveFaceoff(playerId);
-    }
-    
-    setSwipeStart(null);
-    setSwipeEnd(null);
-  };
+  // Swipe gesture handlers - REMOVED (using buttons instead)
+  // const handleTouchStart = (e, playerId) => { ... }
+  // const handleTouchMove = (e, playerId) => { ... }
+  // const handleTouchEnd = (e, playerId) => { ... }
+  // const handleCardClick = (playerId) => { ... }
 
   // Handle answer submission
   const handleSubmitAnswer = async () => {
@@ -262,6 +239,13 @@ const GamePlay = () => {
     );
   }
 
+  // Debug faceoff state
+  console.log('🔍 Faceoff state check:', {
+    faceoff: faceoff,
+    gameStateStatus: gameState?.status,
+    gameStateFaceoff: gameState?.currentFaceoff
+  });
+
   // Faceoff UI
   if (faceoff) {
     const player1 = gameState.players.find(p => p.id === faceoff.player1);
@@ -290,23 +274,24 @@ const GamePlay = () => {
             </div>
           </div>
 
-          {/* Swipe Instructions */}
+          {/* Instructions */}
           <div className="mb-8">
             <h3 className="text-xl font-bold text-white mb-4">Who won the faceoff?</h3>
             <div className="text-lg text-gray-300 mb-6">
-              Loser swipes up on their card to give it away
+              <div className="mb-2">First to shout the opponent's category wins!</div>
+              <div className="text-sm text-yellow-400">
+                {currentPlayer && (faceoff.player1 === currentPlayer.id || faceoff.player2 === currentPlayer.id) 
+                  ? "Click below if you lost the faceoff"
+                  : "Waiting for players to resolve the faceoff..."
+                }
+              </div>
             </div>
           </div>
 
           {/* Faceoff Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Player 1 Card */}
-            <div 
-              className="swipeable-card bg-white/20 backdrop-blur-lg rounded-xl p-6 cursor-pointer transition-transform hover:scale-105"
-              onTouchStart={(e) => handleTouchStart(e, player1.id)}
-              onTouchMove={(e) => handleTouchMove(e, player1.id)}
-              onTouchEnd={(e) => handleTouchEnd(e, player1.id)}
-            >
+            <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6">
               <div className="card-content">
                 <div className="text-6xl mb-4">
                   {faceoff.player1Card?.shape === 'circle' && '⭕'}
@@ -321,18 +306,24 @@ const GamePlay = () => {
                 <div className="text-xl font-bold text-white mb-2">{player1?.name}</div>
                 <div className="text-lg text-gray-300">{faceoff.player1Card?.category}</div>
               </div>
-              <div className="swipe-instruction mt-4">
-                <span className="text-sm text-yellow-400">👆 Swipe up if you lost</span>
-              </div>
+              {currentPlayer && faceoff.player1 === currentPlayer.id ? (
+                <button 
+                  className="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  onClick={() => resolveFaceoff(player1.id)}
+                >
+                  I Lost
+                </button>
+              ) : (
+                <div className="mt-4 text-center">
+                  <div className="text-sm text-gray-400">
+                    {faceoff.player1 === currentPlayer?.id ? "Waiting for you..." : "Waiting for player..."}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Player 2 Card */}
-            <div 
-              className="swipeable-card bg-white/20 backdrop-blur-lg rounded-xl p-6 cursor-pointer transition-transform hover:scale-105"
-              onTouchStart={(e) => handleTouchStart(e, player2.id)}
-              onTouchMove={(e) => handleTouchMove(e, player2.id)}
-              onTouchEnd={(e) => handleTouchEnd(e, player2.id)}
-            >
+            <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6">
               <div className="card-content">
                 <div className="text-6xl mb-4">
                   {faceoff.player2Card?.shape === 'circle' && '⭕'}
@@ -347,9 +338,20 @@ const GamePlay = () => {
                 <div className="text-xl font-bold text-white mb-2">{player2?.name}</div>
                 <div className="text-lg text-gray-300">{faceoff.player2Card?.category}</div>
               </div>
-              <div className="swipe-instruction mt-4">
-                <span className="text-sm text-yellow-400">👆 Swipe up if you lost</span>
-              </div>
+              {currentPlayer && faceoff.player2 === currentPlayer.id ? (
+                <button 
+                  className="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  onClick={() => resolveFaceoff(player2.id)}
+                >
+                  I Lost
+                </button>
+              ) : (
+                <div className="mt-4 text-center">
+                  <div className="text-sm text-gray-400">
+                    {faceoff.player2 === currentPlayer?.id ? "Waiting for you..." : "Waiting for player..."}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
