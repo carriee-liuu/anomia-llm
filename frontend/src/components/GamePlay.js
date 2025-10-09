@@ -39,9 +39,22 @@ const GamePlay = () => {
   const answerInputRef = useRef(null);
   const timerRef = useRef(null);
 
+  // Check if it's the current player's turn
+  const isMyTurn = () => {
+    if (!gameState || !currentPlayer) return false;
+    return gameState.currentPlayerId === currentPlayer.id && gameState.status === 'active';
+  };
+
+  // Check if player has already flipped this turn
+  const hasFlippedThisTurn = () => {
+    if (!gameState || !currentPlayer) return false;
+    const player = gameState.players.find(p => p.id === currentPlayer.id);
+    return player?.hasFlippedThisTurn || false;
+  };
+
   // Handle card flip
   const handleFlipCard = async () => {
-    if (isFlipping) return;
+    if (isFlipping || !isMyTurn() || hasFlippedThisTurn()) return;
     
     setIsFlipping(true);
     try {
@@ -412,11 +425,38 @@ const GamePlay = () => {
                   </div>
                 )}
                 
+                {/* Turn Status */}
+                <div className="mt-4 mb-2">
+                  {isMyTurn() ? (
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-yellow-400 mb-2">
+                        🎯 It's Your Turn!
+                      </div>
+                      {hasFlippedThisTurn() && (
+                        <div className="text-sm text-gray-400">
+                          You've already flipped a card this turn
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-400 mb-2">
+                        ⏳ Waiting for your turn...
+                      </div>
+                      {gameState?.currentPlayerId && (
+                        <div className="text-sm text-gray-500">
+                          {gameState.players.find(p => p.id === gameState.currentPlayerId)?.name}'s turn
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   onClick={handleFlipCard}
-                  disabled={isFlipping || gameStatus === 'faceoff'}
-                  className={`mt-6 px-8 py-3 rounded-lg font-bold transition-all duration-200 ${
-                    isFlipping || gameStatus === 'faceoff'
+                  disabled={isFlipping || gameStatus === 'faceoff' || !isMyTurn() || hasFlippedThisTurn()}
+                  className={`mt-2 px-8 py-3 rounded-lg font-bold transition-all duration-200 ${
+                    isFlipping || gameStatus === 'faceoff' || !isMyTurn() || hasFlippedThisTurn()
                       ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
                       : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transform hover:scale-105'
                   }`}
@@ -425,6 +465,16 @@ const GamePlay = () => {
                     <>
                       <div className="spinner inline mr-2"></div>
                       Flipping...
+                    </>
+                  ) : hasFlippedThisTurn() ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 inline mr-2" />
+                      Already Flipped
+                    </>
+                  ) : !isMyTurn() ? (
+                    <>
+                      <Clock className="w-5 h-5 inline mr-2" />
+                      Not Your Turn
                     </>
                   ) : (
                     <>
