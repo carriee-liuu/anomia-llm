@@ -12,9 +12,9 @@ def main():
     load_dotenv()
     
     # Get configuration from environment
-    port = int(os.getenv("PORT", 3001))  # Railway sets PORT automatically
+    port = int(os.getenv("PORT", 3001))
     host = os.getenv("HOST", "0.0.0.0")
-    debug = os.getenv("DEBUG", "false").lower() == "true"  # Default to false for production
+    debug = os.getenv("DEBUG", "true").lower() == "true"
     
     print("🚀 Starting Anomia LLM Python Backend...")
     print(f"📡 Server: {host}:{port}")

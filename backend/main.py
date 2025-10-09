@@ -23,14 +23,7 @@ app = FastAPI(title="Anomia LLM Backend", version="1.0.0")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Development frontend
-        "https://carriee-liuu.github.io",  # Production GitHub Pages
-        "https://carriee-liuu.github.io/anomia-llm",  # Specific GitHub Pages URL
-        "https://*.github.io",    # GitHub Pages wildcard
-        "https://*.vercel.app",   # Vercel
-        "https://*.netlify.app",  # Netlify
-    ],
+    allow_origins=["http://localhost:3000"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,14 +75,6 @@ async def get_room(room_code: str):
     except Exception as e:
         logger.error(f"Error getting room: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for Railway"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat()
-    }
 
 # WebSocket endpoint
 @app.websocket("/ws/{room_code}")

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Game state reducer
@@ -120,6 +120,7 @@ const GameContext = createContext();
 // Provider component
 export const GameProvider = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [isCreatingSocket, setIsCreatingSocket] = useState(false);
   const currentSocketRef = useRef(null);
   const hasCreatedSocketRef = useRef(false);
   const navigate = useNavigate();
@@ -246,7 +247,7 @@ export const GameProvider = ({ children }) => {
         }
       };
     }
-  }, [state.currentRoom?.roomCode, navigate, state.socket]); // Include all dependencies
+  }, [state.currentRoom?.roomCode]); // Only run when roomCode changes
 
   // Actions
   const actions = {
