@@ -164,7 +164,7 @@ class GameService:
             faceoffs = game.find_matching_players(player_id)
             if faceoffs:
                 # Start faceoff if matches found
-                game.current_faceoff = faceoffs[0]
+                game.current_faceoff = faceoffs[0]  # Take first faceoff
                 game.status = GameStatus.FACEOFF
                 logger.info(f"Faceoff started between {faceoffs[0].player1_id} and {faceoffs[0].player2_id}")
             else:
