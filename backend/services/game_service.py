@@ -164,7 +164,8 @@ class GameService:
             faceoffs = game.find_matching_players(player_id)
             if faceoffs:
                 # Start faceoff if matches found
-                game.start_faceoff(faceoffs[0])  # Use new start_faceoff method
+                game.current_faceoff = faceoffs[0]
+                game.status = GameStatus.FACEOFF
                 logger.info(f"Faceoff started between {faceoffs[0].player1_id} and {faceoffs[0].player2_id}")
             else:
                 # No faceoff - advance turn automatically
@@ -383,13 +384,16 @@ class GameService:
             if loser:
                 loser.reset_turn_flag()
             
-            # Continue turn from where it left off before faceoff (official Anomia rules)
-            next_player = game.continue_turn_after_faceoff()
+            # Advance turn after faceoff resolution (simple: just go to next player)
+            next_player = game.next_turn()
             if next_player:
                 result['nextPlayer'] = next_player.to_dict()
                 result['message'] = f"Faceoff resolved! {result['winner']['name']} won. Turn passed to {next_player.name}"
             else:
                 result['message'] = f"Faceoff resolved! {result['winner']['name']} won."
+            
+            # Update the game state with the new turn information
+            result['gameState'] = game.to_dict()
             
             logger.info(f"Faceoff resolved: {result['winner']['name']} won, {result['loser']['name']} lost")
             
