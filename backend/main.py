@@ -23,7 +23,11 @@ app = FastAPI(title="Anomia LLM Backend", version="1.0.0")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:3000",  # Development frontend
+        "https://carriee-liuu.github.io",  # Production GitHub Pages
+        "https://carriee-liuu.github.io/anomia-llm"  # Specific GitHub Pages URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

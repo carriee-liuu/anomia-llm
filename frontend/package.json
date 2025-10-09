@@ -2,6 +2,7 @@
   "name": "anomia-llm-frontend",
   "version": "1.0.0",
   "description": "Anomia LLM - AI-powered party word game",
+  "homepage": "https://carriee-liuu.github.io/anomia-llm",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.4",
