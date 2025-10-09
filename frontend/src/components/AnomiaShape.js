@@ -1,132 +1,158 @@
 import React from 'react';
 
 const AnomiaShape = ({ shape, size = 60, color = "#ffffff", className = "" }) => {
-  const shapeStyle = {
-    width: size,
-    height: size,
-    fill: color,
-    stroke: color,
-    strokeWidth: 2,
-  };
-
   const renderShape = () => {
+    const centerX = size / 2;
+    const centerY = size / 2;
+    
     switch (shape) {
       case 'circle':
         return (
           <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={size / 2 - 2}
-            style={shapeStyle}
+            cx={centerX}
+            cy={centerY}
+            r={size / 2}
+            fill={color}
           />
         );
-      
-      case 'square':
+
+      case 'square': // The "grid" symbol is a square in the base game.
         return (
           <rect
-            x={2}
-            y={2}
-            width={size - 4}
-            height={size - 4}
-            style={shapeStyle}
+            x={centerX - size / 2}
+            y={centerY - size / 2}
+            width={size}
+            height={size}
+            fill={color}
+            rx={size * 0.2}
+            ry={size * 0.2}
           />
         );
-      
-      case 'triangle':
+
+      case 'plus': // Green plus sign
+        const plusThickness = size * 0.2;
         return (
-          <polygon
-            points={`${size / 2},2 ${size - 2},${size - 2} 2,${size - 2}`}
-            style={shapeStyle}
-          />
+          <g>
+            <rect
+              x={centerX - plusThickness / 2}
+              y={centerY - size / 2}
+              width={plusThickness}
+              height={size}
+              fill={color}
+              rx={plusThickness / 2}
+              ry={plusThickness / 2}
+            />
+            <rect
+              x={centerX - size / 2}
+              y={centerY - plusThickness / 2}
+              width={size}
+              height={plusThickness}
+              fill={color}
+              rx={plusThickness / 2}
+              ry={plusThickness / 2}
+            />
+          </g>
         );
-      
-      case 'diamond':
+
+      case 'waves': // Purple waves
         return (
-          <polygon
-            points={`${size / 2},2 ${size - 2},${size / 2} ${size / 2},${size - 2} 2,${size / 2}`}
-            style={shapeStyle}
-          />
+          <g>
+            <circle cx={centerX - size * 0.25} cy={centerY + size * 0.1} r={size * 0.2} fill={color} />
+            <circle cx={centerX} cy={centerY - size * 0.15} r={size * 0.2} fill={color} />
+            <circle cx={centerX + size * 0.25} cy={centerY + size * 0.1} r={size * 0.2} fill={color} />
+          </g>
         );
-      
-      case 'star':
-        // 5-pointed star
-        const starPoints = [];
-        const centerX = size / 2;
-        const centerY = size / 2;
-        const outerRadius = size / 2 - 2;
-        const innerRadius = outerRadius * 0.4;
         
-        for (let i = 0; i < 10; i++) {
-          const angle = (i * Math.PI) / 5;
-          const radius = i % 2 === 0 ? outerRadius : innerRadius;
-          const x = centerX + radius * Math.cos(angle - Math.PI / 2);
-          const y = centerY + radius * Math.sin(angle - Math.PI / 2);
-          starPoints.push(`${x},${y}`);
-        }
-        
+      case 'diamond': // Yellow diamond
         return (
-          <polygon
-            points={starPoints.join(' ')}
-            style={shapeStyle}
+          <rect
+            x={centerX - size / 2}
+            y={centerY - size / 2}
+            width={size}
+            height={size}
+            fill={color}
+            rx={size * 0.1}
+            ry={size * 0.1}
+            transform={`rotate(45 ${centerX} ${centerY})`}
           />
         );
-      
-      case 'heart':
-        // Heart shape using path
-        const heartPath = `M ${size / 2},${size - 2} 
-          C ${size / 2},${size * 0.7} ${size * 0.2},${size * 0.4} ${size * 0.2},${size * 0.6}
-          C ${size * 0.2},${size * 0.8} ${size * 0.4},${size * 0.9} ${size / 2},${size - 2}
-          C ${size * 0.6},${size * 0.9} ${size * 0.8},${size * 0.8} ${size * 0.8},${size * 0.6}
-          C ${size * 0.8},${size * 0.4} ${size * 0.6},${size * 0.7} ${size / 2},${size - 2} Z`;
-        
+
+      case 'asterisk': // Brown asterisk
+        const asteriskThickness = size * 0.15;
         return (
-          <path
-            d={heartPath}
-            style={shapeStyle}
-          />
+          <g>
+            <rect
+              x={centerX - asteriskThickness / 2}
+              y={centerY - size / 2}
+              width={asteriskThickness}
+              height={size}
+              fill={color}
+              rx={asteriskThickness / 2}
+              ry={asteriskThickness / 2}
+            />
+            <rect
+              x={centerX - size / 2}
+              y={centerY - asteriskThickness / 2}
+              width={size}
+              height={asteriskThickness}
+              fill={color}
+              rx={asteriskThickness / 2}
+              ry={asteriskThickness / 2}
+              transform={`rotate(60 ${centerX} ${centerY})`}
+            />
+            <rect
+              x={centerX - size / 2}
+              y={centerY - asteriskThickness / 2}
+              width={size}
+              height={asteriskThickness}
+              fill={color}
+              rx={asteriskThickness / 2}
+              ry={asteriskThickness / 2}
+              transform={`rotate(120 ${centerX} ${centerY})`}
+            />
+          </g>
         );
-      
-      case 'hexagon':
-        const hexPoints = [];
-        for (let i = 0; i < 6; i++) {
-          const angle = (i * Math.PI) / 3;
-          const x = size / 2 + (size / 2 - 2) * Math.cos(angle);
-          const y = size / 2 + (size / 2 - 2) * Math.sin(angle);
-          hexPoints.push(`${x},${y}`);
-        }
-        
+
+      case 'dots': // Four red dots
+        const dotRadius = size * 0.1;
+        const dotOffset = size * 0.2;
         return (
-          <polygon
-            points={hexPoints.join(' ')}
-            style={shapeStyle}
-          />
+          <g>
+            <circle cx={centerX - dotOffset} cy={centerY - dotOffset} r={dotRadius} fill={color} />
+            <circle cx={centerX + dotOffset} cy={centerY - dotOffset} r={dotRadius} fill={color} />
+            <circle cx={centerX - dotOffset} cy={centerY + dotOffset} r={dotRadius} fill={color} />
+            <circle cx={centerX + dotOffset} cy={centerY + dotOffset} r={dotRadius} fill={color} />
+          </g>
         );
-      
-      case 'pentagon':
-        const pentPoints = [];
-        for (let i = 0; i < 5; i++) {
-          const angle = (i * 2 * Math.PI) / 5;
-          const x = size / 2 + (size / 2 - 2) * Math.cos(angle - Math.PI / 2);
-          const y = size / 2 + (size / 2 - 2) * Math.sin(angle - Math.PI / 2);
-          pentPoints.push(`${x},${y}`);
-        }
-        
+
+      case 'equals': // Pink equal signs
+        const equalsThickness = size * 0.15;
+        const equalsOffset = size * 0.15;
         return (
-          <polygon
-            points={pentPoints.join(' ')}
-            style={shapeStyle}
-          />
+          <g>
+            <rect
+              x={centerX - size / 2}
+              y={centerY - equalsOffset - equalsThickness / 2}
+              width={size}
+              height={equalsThickness}
+              fill={color}
+              rx={equalsThickness / 2}
+              ry={equalsThickness / 2}
+            />
+            <rect
+              x={centerX - size / 2}
+              y={centerY + equalsOffset - equalsThickness / 2}
+              width={size}
+              height={equalsThickness}
+              fill={color}
+              rx={equalsThickness / 2}
+              ry={equalsThickness / 2}
+            />
+          </g>
         );
-      
+
       default:
-        return (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={size / 2 - 2}
-            style={shapeStyle}
-          />
-        );
+        return null;
     }
   };
 

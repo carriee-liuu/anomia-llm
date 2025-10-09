@@ -28,19 +28,19 @@ class GameService:
             "points_per_win": 1
         }
         
-        # Available shapes for Anomia cards
-        self.shapes = ["circle", "square", "triangle", "diamond", "star", "heart", "hexagon", "pentagon"]
+        # Available shapes for Anomia cards (authentic Anomia game shapes)
+        self.shapes = ["circle", "square", "plus", "waves", "diamond", "asterisk", "dots", "equals"]
         
         # Sample categories for each shape
         self.categories_by_shape = {
             "circle": ["Pizza", "Wheel", "Coin", "Button", "Clock"],
             "square": ["Box", "Window", "Book", "Table", "Picture"],
-            "triangle": ["Pyramid", "Roof", "Flag", "Slice", "Mountain"],
-            "diamond": ["Ring", "Crystal", "Baseball", "Kite", "Gem"],
-            "star": ["Flag", "Award", "Flower", "Snowflake", "Compass"],
-            "heart": ["Valentine", "Organ", "Emoji", "Card", "Candy"],
-            "hexagon": ["Honeycomb", "Nut", "Crystal", "Stop Sign", "Bolt"],
-            "pentagon": ["Building", "Shield", "Flower", "Star", "Coin"]
+            "plus": ["Cross", "Plus", "Addition", "Medical", "Church"],
+            "waves": ["Wave", "Squiggle", "Zigzag", "Lightning", "Curve"],
+            "diamond": ["Diamond", "Gem", "Crystal", "Jewel", "Ring"],
+            "asterisk": ["Star", "Asterisk", "Sparkle", "Shine", "Glow"],
+            "dots": ["Dots", "Spots", "Points", "Circles", "Marks"],
+            "equals": ["Pause", "Stop", "Wait", "Break", "Rest"]
         }
     
     def start_game(self, room_code: str) -> Dict[str, Any]:
