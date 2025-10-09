@@ -49,8 +49,7 @@ class Player:
     name: str
     is_host: bool = False
     score: int = 0
-    cards: List[Card] = field(default_factory=list)  # All cards player has collected
-    visible_cards: List[Card] = field(default_factory=list)  # Stack of cards currently visible (face-up)
+    deck: List[Card] = field(default_factory=list)  # Player's individual deck of cards
     is_ready: bool = False
     socket_id: Optional[str] = None
     has_flipped_this_turn: bool = False  # Track if player has flipped this turn
@@ -62,29 +61,27 @@ class Player:
             "name": self.name,
             "isHost": self.is_host,
             "score": self.score,
-            "cards": [card.to_dict() for card in self.cards],
-            "visibleCards": [card.to_dict() for card in self.visible_cards],
+            "deck": [card.to_dict() for card in self.deck],
             "isReady": self.is_ready,
             "socketId": self.socket_id,
             "hasFlippedThisTurn": self.has_flipped_this_turn
         }
     
-    def add_card_to_stack(self, card: Card) -> None:
-        """Add a new card to the visible stack"""
-        self.visible_cards.append(card)
-        self.cards.append(card)
+    def add_card_to_deck(self, card: Card) -> None:
+        """Add a new card to the player's deck"""
+        self.deck.append(card)
     
     def get_top_card(self) -> Optional[Card]:
-        """Get the top card from the visible stack"""
-        return self.visible_cards[-1] if self.visible_cards else None
+        """Get the top card from the player's deck"""
+        return self.deck[-1] if self.deck else None
     
     def remove_top_card(self) -> Optional[Card]:
-        """Remove and return the top card from the visible stack"""
-        return self.visible_cards.pop() if self.visible_cards else None
+        """Remove and return the top card from the player's deck"""
+        return self.deck.pop() if self.deck else None
     
-    def has_visible_cards(self) -> bool:
-        """Check if player has any visible cards"""
-        return len(self.visible_cards) > 0
+    def has_cards(self) -> bool:
+        """Check if player has any cards in their deck"""
+        return len(self.deck) > 0
     
     def reset_turn_flag(self) -> None:
         """Reset the has_flipped_this_turn flag for next turn"""
@@ -192,7 +189,7 @@ class Game:
     def find_matching_players(self, current_player_id: str) -> List[Faceoff]:
         """Find players with matching shapes"""
         current_player = self.get_player(current_player_id)
-        if not current_player or not current_player.has_visible_cards():
+        if not current_player or not current_player.has_cards():
             return []
         
         faceoffs = []
@@ -204,7 +201,7 @@ class Game:
         
         for other_player in self.players:
             if (other_player.id != current_player_id and 
-                other_player.has_visible_cards()):
+                other_player.has_cards()):
                 
                 other_top_card = other_player.get_top_card()
                 if other_top_card and other_top_card.shape == current_shape:
@@ -224,7 +221,7 @@ class Game:
             return None
         
         loser = self.get_player(loser_id)
-        if not loser or not loser.has_visible_cards():
+        if not loser or not loser.has_cards():
             return None
         
         # Find the winner (the other player in the faceoff)
@@ -240,7 +237,7 @@ class Game:
         if not transferred_card:
             return None
             
-        winner.cards.append(transferred_card)
+        winner.add_card_to_deck(transferred_card)
         winner.score += 1
         
         # Add to game history

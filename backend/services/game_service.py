@@ -76,8 +76,7 @@ class GameService:
                     name=room_player["name"],
                     is_host=room_player.get("isHost", False),
                     score=0,
-                    cards=[],
-                    visible_cards=[],
+                    deck=[],
                     is_ready=False,
                     socket_id=room_player.get("socketId"),
                     has_flipped_this_turn=False
@@ -151,7 +150,7 @@ class GameService:
                 game.deck = self._generate_initial_deck(len(game.players))
             
             new_card = game.deck.pop()
-            player.add_card_to_stack(new_card)
+            player.add_card_to_deck(new_card)
             player.has_flipped_this_turn = True
             
             # Add card flip event

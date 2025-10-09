@@ -143,7 +143,7 @@ const GamePlay = () => {
     }
   }, [showAnswerInput]);
 
-  // Get current player's card
+  // Get current player's top card
   const getCurrentPlayerCard = () => {
     console.log('🔍 getCurrentPlayerCard called with gameState:', gameState);
     console.log('🔍 currentPlayer:', currentPlayer);
@@ -165,7 +165,16 @@ const GamePlay = () => {
     
     const player = gameState.players.find(p => p.id === currentPlayer.id);
     console.log('🔍 Found player:', player);
-    return player?.currentCard;
+    
+    if (!player || !player.deck || player.deck.length === 0) {
+      console.log('❌ Player not found or no cards in deck, returning null');
+      return null;
+    }
+    
+    // Return the top card (last card in deck)
+    const topCard = player.deck[player.deck.length - 1];
+    console.log('✅ Found top card:', topCard);
+    return topCard;
   };
 
   // Get current matches
