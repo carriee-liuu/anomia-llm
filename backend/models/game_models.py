@@ -14,12 +14,12 @@ class GameStatus(Enum):
 class CardShape(Enum):
     CIRCLE = "circle"
     SQUARE = "square"
-    TRIANGLE = "triangle"
+    PLUS = "plus"
+    WAVES = "waves"
     DIAMOND = "diamond"
-    STAR = "star"
-    HEART = "heart"
-    HEXAGON = "hexagon"
-    PENTAGON = "pentagon"
+    ASTERISK = "asterisk"
+    DOTS = "dots"
+    EQUALS = "equals"
 
 
 @dataclass

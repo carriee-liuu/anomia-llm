@@ -327,7 +327,7 @@ class GameService:
         for i in range(deck_size):
             # Select a random shape
             shape_name = random.choice(self.shapes)
-            shape = CardShape(shape_name)
+            shape = CardShape[shape_name.upper()]
             # Select a random category for that shape
             category = random.choice(self.categories_by_shape[shape_name])
             
