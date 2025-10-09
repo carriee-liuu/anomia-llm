@@ -86,8 +86,8 @@ class GameService:
             # Generate initial deck
             game.deck = self._generate_initial_deck(len(room["players"]))
             
-            # Deal cards to players
-            self._deal_cards(game)
+            # In Anomia, players start with empty decks and get cards by flipping
+            # No initial card dealing - players flip cards during their turns
             
             # Set the first player's turn
             game.set_initial_turn()
@@ -329,7 +329,9 @@ class GameService:
         return self._shuffle_deck(deck)
     
     def _deal_cards(self, game: Game):
-        """Deal cards to players"""
+        """Deal cards to players - NOT USED in Anomia game"""
+        # In Anomia, players start with empty decks and get cards by flipping
+        # This function is kept for potential future use but not called
         for player in game.players:
             for i in range(self.game_config["cards_per_player"]):
                 if len(game.deck) > 0:
