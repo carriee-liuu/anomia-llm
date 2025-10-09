@@ -42,6 +42,9 @@ class GameService:
             "dots": ["Dots", "Spots", "Points", "Circles", "Marks"],
             "equals": ["Pause", "Stop", "Wait", "Break", "Rest"]
         }
+        
+        # Wild card categories (just "Wild Card" - no specific names)
+        self.wild_categories = ["Wild Card"]
     
     def start_game(self, room_code: str) -> Dict[str, Any]:
         """Start a new game in a room"""
@@ -150,15 +153,50 @@ class GameService:
                 game.deck = self._generate_initial_deck(len(game.players))
             
             new_card = game.deck.pop()
-            player.add_card_to_deck(new_card)
-            player.has_flipped_this_turn = True
             
-            # Add card flip event
-            game.add_event(GameEvent(
-                event_type="card_flipped",
-                player_id=player_id,
-                data={"card": new_card.to_dict()}
-            ))
+            # If it's a wild card, handle specially
+            if new_card.is_wild:
+                # Wild card goes to player's deck
+                player.add_card_to_deck(new_card)
+                
+                # Replace any existing wild card in center
+                game.current_wild_card = new_card
+                wild_shapes_str = [s.value for s in new_card.wild_shapes] if new_card.wild_shapes else []
+                logger.info(f"Wild card drawn and placed: {new_card.category} with shapes {wild_shapes_str}")
+                
+                # Add wild card event
+                game.add_event(GameEvent(
+                    event_type="wild_card_drawn",
+                    player_id=player_id,
+                    data={
+                        "wildCard": new_card.to_dict(),
+                        "wildShapes": [s.value for s in new_card.wild_shapes] if new_card.wild_shapes else [],
+                        "message": f"{player.name} drew a wild card! It's now active at the top. Draw again!"
+                    }
+                ))
+                
+                # DON'T mark as flipped this turn - player needs to draw again
+                # player.has_flipped_this_turn = True  # REMOVED THIS LINE
+                
+                return {
+                    "success": True,
+                    "gameState": game.to_dict(),
+                    "message": f"🌟 Wild Card! These two shapes can now match. Draw another card!",
+                    "isWildCard": True,
+                    "wildCard": new_card.to_dict()
+                }
+            else:
+                # Regular card goes to player's deck
+                player.add_card_to_deck(new_card)
+                
+                # Add card flip event
+                game.add_event(GameEvent(
+                    event_type="card_flipped",
+                    player_id=player_id,
+                    data={"card": new_card.to_dict()}
+                ))
+                
+                player.has_flipped_this_turn = True
             
             # Check for faceoffs after card flip
             faceoffs = game.find_matching_players(player_id)
@@ -171,7 +209,13 @@ class GameService:
                 # No faceoff - advance turn automatically
                 next_player = game.next_turn()
                 if next_player:
-                    logger.info(f"Turn advanced to {next_player.name} after {player.name} flipped card")
+                    # Log wild card status for this turn
+                    wild_status = "ACTIVE" if game.current_wild_card else "INACTIVE"
+                    wild_info = ""
+                    if game.current_wild_card and game.current_wild_card.wild_shapes:
+                        shapes = [s.value for s in game.current_wild_card.wild_shapes]
+                        wild_info = f" (shapes: {', '.join(shapes)})"
+                    logger.info(f"Turn advanced to {next_player.name} - Wild Card: {wild_status}{wild_info}")
             
             logger.info(f"Card flipped for player {player.name} in room {room_code}")
             
@@ -213,7 +257,13 @@ class GameService:
                     "error": "No players found"
                 }
             
-            logger.info(f"Turn advanced to player {next_player.name} in room {room_code}")
+            # Log wild card status for this turn
+            wild_status = "ACTIVE" if game.current_wild_card else "INACTIVE"
+            wild_info = ""
+            if game.current_wild_card and game.current_wild_card.wild_shapes:
+                shapes = [s.value for s in game.current_wild_card.wild_shapes]
+                wild_info = f" (shapes: {', '.join(shapes)})"
+            logger.info(f"Turn advanced to player {next_player.name} in room {room_code} - Wild Card: {wild_status}{wild_info}")
             
             return {
                 "success": True,
@@ -325,18 +375,34 @@ class GameService:
         
         deck = []
         for i in range(deck_size):
-            # Select a random shape
-            shape_name = random.choice(self.shapes)
-            shape = CardShape[shape_name.upper()]
-            # Select a random category for that shape
-            category = random.choice(self.categories_by_shape[shape_name])
+            # 15% chance for wild card
+            if random.random() < 0.15:
+                # Create wild card
+                wild_shapes = random.sample(self.shapes, 2)  # Pick 2 different shapes
+                category = random.choice(self.wild_categories)
+                
+                card = Card(
+                    id=str(uuid.uuid4()),
+                    shape=CardShape.WILD,
+                    category=category,
+                    difficulty="medium",
+                    is_wild=True,
+                    wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
+                )
+            else:
+                # Regular card
+                shape_name = random.choice(self.shapes)
+                shape = CardShape[shape_name.upper()]
+                category = random.choice(self.categories_by_shape[shape_name])
+                
+                card = Card(
+                    id=str(uuid.uuid4()),
+                    shape=shape,
+                    category=category,
+                    difficulty="medium",
+                    is_wild=False
+                )
             
-            card = Card(
-                id=str(uuid.uuid4()),
-                shape=shape,
-                category=category,
-                difficulty="medium"
-            )
             deck.append(card)
         
         # Shuffle deck

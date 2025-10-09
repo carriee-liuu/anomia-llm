@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
+import AnomiaShape from './AnomiaShape';
 import { 
   Play, 
   Users, 
@@ -23,7 +24,8 @@ const GamePlay = () => {
     submitAnswer,
     gameStatus,
     faceoff,
-    resolveFaceoff
+    resolveFaceoff,
+    state
   } = useGame();
   
   const [currentAnswer, setCurrentAnswer] = useState('');
@@ -293,15 +295,12 @@ const GamePlay = () => {
             {/* Player 1 Card */}
             <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6">
               <div className="card-content">
-                <div className="text-6xl mb-4">
-                  {faceoff.player1Card?.shape === 'circle' && '⭕'}
-                  {faceoff.player1Card?.shape === 'square' && '⬜'}
-                  {faceoff.player1Card?.shape === 'triangle' && '🔺'}
-                  {faceoff.player1Card?.shape === 'diamond' && '💎'}
-                  {faceoff.player1Card?.shape === 'star' && '⭐'}
-                  {faceoff.player1Card?.shape === 'heart' && '❤️'}
-                  {faceoff.player1Card?.shape === 'hexagon' && '⬡'}
-                  {faceoff.player1Card?.shape === 'pentagon' && '⬟'}
+                <div className="mb-4">
+                  <AnomiaShape 
+                    shape={faceoff.player1Card?.shape} 
+                    size={80} 
+                    color="#ffffff" 
+                  />
                 </div>
                 <div className="text-xl font-bold text-white mb-2">{player1?.name}</div>
                 <div className="text-lg text-gray-300">{faceoff.player1Card?.category}</div>
@@ -325,15 +324,12 @@ const GamePlay = () => {
             {/* Player 2 Card */}
             <div className="bg-white/20 backdrop-blur-lg rounded-xl p-6">
               <div className="card-content">
-                <div className="text-6xl mb-4">
-                  {faceoff.player2Card?.shape === 'circle' && '⭕'}
-                  {faceoff.player2Card?.shape === 'square' && '⬜'}
-                  {faceoff.player2Card?.shape === 'triangle' && '🔺'}
-                  {faceoff.player2Card?.shape === 'diamond' && '💎'}
-                  {faceoff.player2Card?.shape === 'star' && '⭐'}
-                  {faceoff.player2Card?.shape === 'heart' && '❤️'}
-                  {faceoff.player2Card?.shape === 'hexagon' && '⬡'}
-                  {faceoff.player2Card?.shape === 'pentagon' && '⬟'}
+                <div className="mb-4">
+                  <AnomiaShape 
+                    shape={faceoff.player2Card?.shape} 
+                    size={80} 
+                    color="#ffffff" 
+                  />
                 </div>
                 <div className="text-xl font-bold text-white mb-2">{player2?.name}</div>
                 <div className="text-lg text-gray-300">{faceoff.player2Card?.category}</div>
@@ -381,7 +377,73 @@ const GamePlay = () => {
               <span>Best Score: {Math.max(...getPlayerScores().map(p => p.score))}</span>
             </div>
           </div>
+          
+          {/* Wild Card Display at Top */}
+          {gameState.currentWildCard && (
+            <motion.div 
+              className="mt-4 bg-white rounded-xl p-6 border-2 border-orange-500 max-w-md mx-auto shadow-lg"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="text-center">
+                {/* Top Symbol */}
+                <div className="mb-2">
+                  {gameState.currentWildCard.wild_shapes?.[0] ? (
+                    <AnomiaShape 
+                      shape={gameState.currentWildCard.wild_shapes[0]} 
+                      size={40} 
+                      color="#333333" 
+                    />
+                  ) : (
+                    <div className="text-red-500">❌ No shape 1</div>
+                  )}
+                </div>
+                
+                {/* Wild Card Text */}
+                <div className="my-4">
+                  <div className="text-black font-bold text-lg">Wild Card</div>
+                  <div className="text-black font-bold text-lg transform rotate-180">Wild Card</div>
+                </div>
+                
+                {/* Bottom Symbol */}
+                <div className="mt-2">
+                  {gameState.currentWildCard.wild_shapes?.[1] ? (
+                    <AnomiaShape 
+                      shape={gameState.currentWildCard.wild_shapes[1]} 
+                      size={40} 
+                      color="#333333" 
+                    />
+                  ) : (
+                    <div className="text-red-500">❌ No shape 2</div>
+                  )}
+                </div>
+                
+                {/* Instructions */}
+                <div className="mt-3 text-xs text-gray-600">
+                  These two shapes can match
+                </div>
+              </div>
+            </motion.div>
+          )}
         </motion.header>
+
+        {/* Wild Card Message */}
+        {state.wildCardMessage && (
+          <motion.div 
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-lg shadow-lg border-2 border-orange-300"
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🌟</span>
+              <span className="font-bold text-lg">{state.wildCardMessage}</span>
+              <span className="text-2xl">🌟</span>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column - Player List & Scores */}
@@ -435,18 +497,30 @@ const GamePlay = () => {
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <div className="text-6xl mb-4">
-                      {getCurrentPlayerCard().shape === 'circle' && '⭕'}
-                      {getCurrentPlayerCard().shape === 'square' && '⬜'}
-                      {getCurrentPlayerCard().shape === 'triangle' && '🔺'}
-                      {getCurrentPlayerCard().shape === 'diamond' && '💎'}
-                      {getCurrentPlayerCard().shape === 'star' && '⭐'}
-                      {getCurrentPlayerCard().shape === 'heart' && '❤️'}
-                      {getCurrentPlayerCard().shape === 'hexagon' && '⬡'}
-                      {getCurrentPlayerCard().shape === 'pentagon' && '⬟'}
+                    <div className="mb-4">
+                      {getCurrentPlayerCard().is_wild ? (
+                        <div className="flex justify-center gap-4">
+                          <AnomiaShape 
+                            shape={getCurrentPlayerCard().wild_shapes?.[0]} 
+                            size={60} 
+                            color="#ffffff" 
+                          />
+                          <AnomiaShape 
+                            shape={getCurrentPlayerCard().wild_shapes?.[1]} 
+                            size={60} 
+                            color="#ffffff" 
+                          />
+                        </div>
+                      ) : (
+                        <AnomiaShape 
+                          shape={getCurrentPlayerCard().shape} 
+                          size={80} 
+                          color="#ffffff" 
+                        />
+                      )}
                     </div>
                     <h4 className="text-2xl font-bold text-white mb-2">
-                      {getCurrentPlayerCard().category}
+                      {getCurrentPlayerCard().is_wild ? "Wild Card" : getCurrentPlayerCard().category}
                     </h4>
                     <p className="text-white/80 text-sm">
                       {getCurrentPlayerCard().difficulty} difficulty
@@ -594,6 +668,7 @@ const GamePlay = () => {
                 </p>
               </motion.div>
             )}
+
           </motion.div>
 
           {/* Right Column - Game Info & Actions */}

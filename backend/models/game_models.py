@@ -20,6 +20,7 @@ class CardShape(Enum):
     ASTERISK = "asterisk"
     DOTS = "dots"
     EQUALS = "equals"
+    WILD = "wild"
 
 
 @dataclass
@@ -30,16 +31,22 @@ class Card:
     category: str
     difficulty: str = "medium"
     timestamp: datetime = field(default_factory=datetime.now)
+    is_wild: bool = False
+    wild_shapes: Optional[List[CardShape]] = None  # For wild cards, contains the two shapes
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
-        return {
+        result: Dict[str, Any] = {
             "id": self.id,
             "shape": self.shape.value,
             "category": self.category,
             "difficulty": self.difficulty,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
+            "is_wild": self.is_wild
         }
+        if self.is_wild and self.wild_shapes:
+            result["wild_shapes"] = [shape.value for shape in self.wild_shapes]
+        return result
 
 
 @dataclass
@@ -139,6 +146,7 @@ class Game:
     current_faceoff: Optional[Faceoff] = None
     current_player_id: Optional[str] = None  # Track whose turn it is
     current_player_index: int = 0  # Index in players list for turn order
+    current_wild_card: Optional[Card] = None  # Active wild card in center
     game_history: List[GameEvent] = field(default_factory=list)
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
@@ -155,6 +163,7 @@ class Game:
             "players": [player.to_dict() for player in self.players],
             "deck": [card.to_dict() for card in self.deck],
             "currentFaceoff": self.current_faceoff.to_dict() if self.current_faceoff else None,
+            "currentWildCard": self.current_wild_card.to_dict() if self.current_wild_card else None,
             "currentPlayerId": self.current_player_id,
             "currentPlayerIndex": self.current_player_index,
             "gameHistory": [event.to_dict() for event in self.game_history],
@@ -193,7 +202,7 @@ class Game:
         self.last_activity = datetime.now()
     
     def find_matching_players(self, current_player_id: str) -> List[Faceoff]:
-        """Find players with matching shapes"""
+        """Find players with matching shapes (including wild card rules)"""
         current_player = self.get_player(current_player_id)
         if not current_player or not current_player.has_cards():
             return []
@@ -210,11 +219,31 @@ class Game:
                 other_player.has_cards()):
                 
                 other_top_card = other_player.get_top_card()
-                if other_top_card and other_top_card.shape == current_shape:
+                if not other_top_card:
+                    continue
+                
+                other_shape = other_top_card.shape
+                
+                # Check for matches: same shape OR wild card rules
+                shapes_match = False
+                faceoff_shape = current_shape
+                
+                if other_shape == current_shape:
+                    # Normal same-shape match
+                    shapes_match = True
+                elif self.current_wild_card and self.current_wild_card.is_wild:
+                    # Check wild card rules: both shapes must be on the wild card
+                    wild_shapes = self.current_wild_card.wild_shapes or []
+                    if (current_shape in wild_shapes and other_shape in wild_shapes):
+                        shapes_match = True
+                        # Use the wild card's shape for the faceoff
+                        faceoff_shape = self.current_wild_card.shape
+                
+                if shapes_match:
                     faceoffs.append(Faceoff(
                         player1_id=current_player_id,
                         player2_id=other_player.id,
-                        shape=current_shape,
+                        shape=faceoff_shape,
                         player1_card=current_top_card,
                         player2_card=other_top_card
                     ))
@@ -243,7 +272,21 @@ class Game:
             return None
             
         winner.add_card_to_deck(transferred_card)
-        winner.score += 1
+        points_awarded = 1
+        
+        # Check if this faceoff involved the wild card
+        wild_card_involved = False
+        if (self.current_wild_card and 
+            self.current_wild_card.is_wild and
+            self.current_faceoff.shape == self.current_wild_card.shape):
+            # Winner gets the wild card too (bonus points)
+            winner.add_card_to_deck(self.current_wild_card)
+            points_awarded += 1  # Bonus point for wild card
+            wild_card_involved = True
+            # Remove wild card from play
+            self.current_wild_card = None
+        
+        winner.score += points_awarded
         
         # Add to game history
         self.add_event(GameEvent(
@@ -253,7 +296,8 @@ class Game:
                 "winner": winner_id,
                 "loser": loser_id,
                 "transferredCard": transferred_card.to_dict(),
-                "pointsAwarded": 1
+                "pointsAwarded": points_awarded,
+                "wildCardInvolved": wild_card_involved
             }
         ))
         

@@ -86,6 +86,18 @@ const gameReducer = (state, action) => {
         faceoff: null
       };
     
+    case 'SET_WILD_CARD_MESSAGE':
+      return {
+        ...state,
+        wildCardMessage: action.payload
+      };
+    
+    case 'CLEAR_WILD_CARD_MESSAGE':
+      return {
+        ...state,
+        wildCardMessage: null
+      };
+    
     case 'RESET_GAME':
       return {
         ...state,
@@ -108,6 +120,7 @@ const initialState = {
   players: [],
   gameStatus: 'waiting', // waiting, active, faceoff, completed
   faceoff: null, // Current faceoff data
+  wildCardMessage: null, // Message when wild card is drawn
   error: null,
   loading: false,
   messages: [],
@@ -207,6 +220,15 @@ export const GameProvider = ({ children }) => {
               
             case 'cardFlipped':
               dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
+              
+              // Check if this was a wild card
+              if (message.data.isWildCard) {
+                dispatch({ type: 'SET_WILD_CARD_MESSAGE', payload: message.data.message });
+                // Clear the message after 3 seconds
+                setTimeout(() => {
+                  dispatch({ type: 'CLEAR_WILD_CARD_MESSAGE' });
+                }, 3000);
+              }
               break;
               
             case 'answerSubmitted':
@@ -430,7 +452,7 @@ export const GameProvider = ({ children }) => {
   };
 
   return (
-    <GameContext.Provider value={{ ...state, ...actions }}>
+    <GameContext.Provider value={{ ...state, ...actions, state }}>
       {children}
     </GameContext.Provider>
   );

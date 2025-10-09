@@ -151,6 +151,30 @@ const AnomiaShape = ({ shape, size = 60, color = "#ffffff", className = "" }) =>
           </g>
         );
 
+      case 'wild': // Wild card - shows question mark or special symbol
+        return (
+          <g>
+            <circle
+              cx={centerX}
+              cy={centerY}
+              r={size / 2}
+              fill={color}
+              stroke="#ff6b35"
+              strokeWidth={size * 0.1}
+            />
+            <text
+              x={centerX}
+              y={centerY + size * 0.1}
+              textAnchor="middle"
+              fontSize={size * 0.4}
+              fill="#ff6b35"
+              fontWeight="bold"
+            >
+              ?
+            </text>
+          </g>
+        );
+
       default:
         return null;
     }
