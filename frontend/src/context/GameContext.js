@@ -219,16 +219,24 @@ export const GameProvider = ({ children }) => {
               break;
               
             case 'cardFlipped':
+              console.log('🃏 Card flipped event:', message.data);
               dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
               
               // Check if this was a wild card
               if (message.data.isWildCard) {
+                console.log('🌟 Wild card detected in cardFlipped event:', message.data.message);
                 dispatch({ type: 'SET_WILD_CARD_MESSAGE', payload: message.data.message });
                 // Clear the message after 3 seconds
                 setTimeout(() => {
                   dispatch({ type: 'CLEAR_WILD_CARD_MESSAGE' });
                 }, 3000);
               }
+              break;
+              
+            case 'wild_card_drawn':
+              console.log('🌟 Wild card drawn:', message.data);
+              dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
+              dispatch({ type: 'SET_WILD_CARD_MESSAGE', payload: message.data.message });
               break;
               
             case 'answerSubmitted':
@@ -247,6 +255,11 @@ export const GameProvider = ({ children }) => {
               dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
               dispatch({ type: 'CLEAR_FACEOFF' });
               dispatch({ type: 'SET_GAME_STATUS', payload: message.data.gameState.status });
+              
+              // Clear wild card message if wild card was involved in the faceoff
+              if (message.data.wildCardInvolved) {
+                dispatch({ type: 'CLEAR_WILD_CARD_MESSAGE' });
+              }
               break;
               
             case 'error':

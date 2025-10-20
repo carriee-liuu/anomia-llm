@@ -266,12 +266,13 @@ class Game:
         if not winner:
             return None
         
-        # Transfer the top card from loser to winner
-        transferred_card = loser.remove_top_card()
-        if not transferred_card:
+        # Remove the top card from loser (goes to discard pile)
+        discarded_card = loser.remove_top_card()
+        if not discarded_card:
             return None
             
-        winner.add_card_to_deck(transferred_card)
+        # Winner gets points but NOT the card (official Anomia rules)
+        # The card is discarded and out of play entirely
         points_awarded = 1
         
         # Check if this faceoff involved the wild card
@@ -279,11 +280,11 @@ class Game:
         if (self.current_wild_card and 
             self.current_wild_card.is_wild and
             self.current_faceoff.shape == self.current_wild_card.shape):
-            # Winner gets the wild card too (bonus points)
-            winner.add_card_to_deck(self.current_wild_card)
-            points_awarded += 1  # Bonus point for wild card
+            # Wild card match occurred - wild card is removed from play entirely
+            # Winner gets bonus point but NOT the wild card itself
+            points_awarded += 1  # Bonus point for wild card match
             wild_card_involved = True
-            # Remove wild card from play
+            # Remove wild card from play (official Anomia rules)
             self.current_wild_card = None
         
         winner.score += points_awarded
@@ -295,7 +296,7 @@ class Game:
             data={
                 "winner": winner_id,
                 "loser": loser_id,
-                "transferredCard": transferred_card.to_dict(),
+                "discardedCard": discarded_card.to_dict(),
                 "pointsAwarded": points_awarded,
                 "wildCardInvolved": wild_card_involved
             }
@@ -308,8 +309,10 @@ class Game:
         return {
             "winner": winner.to_dict(),
             "loser": loser.to_dict(),
-            "transferredCard": transferred_card.to_dict(),
-            "gameState": self.to_dict()
+            "discardedCard": discarded_card.to_dict(),
+            "gameState": self.to_dict(),
+            "wildCardInvolved": wild_card_involved,
+            "pointsAwarded": points_awarded
         }
     
     def is_player_turn(self, player_id: str) -> bool:

@@ -142,8 +142,8 @@ class GameService:
                 )
                 game.add_player(player)
             
-            # Generate initial deck
-            game.deck = self._generate_initial_deck(len(room["players"]))
+            # Generate initial deck (using test deck for wild card testing)
+            game.deck = self._generate_test_deck(len(room["players"]))
             
             # In Anomia, players start with empty decks and get cards by flipping
             # No initial card dealing - players flip cards during their turns
@@ -203,22 +203,36 @@ class GameService:
                     "error": f"{player.name} has already flipped a card this turn"
                 }
             
+            # Check if player has a wild card in their deck (needs to be activated)
+            player_top_card = player.get_top_card()
+            if player_top_card and player_top_card.is_wild:
+                logger.info(f"🔄 Player {player.name} has wild card in deck, activating it")
+                # Remove wild card from player's deck
+                player.remove_top_card()
+                # Move it to center
+                game.current_wild_card = player_top_card
+                logger.info(f"Wild card now active in center: {player_top_card.category}")
+            
             # Draw a new card for the player
             if len(game.deck) == 0:
                 # Reshuffle deck if empty
                 game.deck = self._generate_initial_deck(len(game.players))
             
-            new_card = game.deck.pop()
+            new_card = game.deck.pop(0)
+            logger.info(f"🃏 Card drawn: {new_card.category} (is_wild: {new_card.is_wild}, shape: {new_card.shape})")
             
             # If it's a wild card, handle specially
             if new_card.is_wild:
-                # Wild card goes to player's deck
-                player.add_card_to_deck(new_card)
+                logger.info(f"🌟 WILD CARD DETECTED: {new_card.category} with shapes {[s.value for s in new_card.wild_shapes] if new_card.wild_shapes else []}")
                 
-                # Replace any existing wild card in center
-                game.current_wild_card = new_card
-                wild_shapes_str = [s.value for s in new_card.wild_shapes] if new_card.wild_shapes else []
-                logger.info(f"Wild card drawn and placed: {new_card.category} with shapes {wild_shapes_str}")
+                # If there's already an active wild card, remove it from play (official Anomia rules)
+                if game.current_wild_card:
+                    logger.info(f"🔄 Replacing existing wild card: {game.current_wild_card.category}")
+                    # Old wild card is "set aside" - removed from play entirely (official Anomia rules)
+                
+                # Give wild card to player so they can see it
+                player.add_card_to_deck(new_card)
+                logger.info(f"Player {player.name} gets wild card: {new_card.category}")
                 
                 # Add wild card event
                 game.add_event(GameEvent(
@@ -227,17 +241,17 @@ class GameService:
                     data={
                         "wildCard": new_card.to_dict(),
                         "wildShapes": [s.value for s in new_card.wild_shapes] if new_card.wild_shapes else [],
-                        "message": f"{player.name} drew a wild card! It's now active at the top. Draw again!"
+                        "message": f"{player.name} drew a wild card! Draw another card to activate it."
                     }
                 ))
                 
                 # DON'T mark as flipped this turn - player needs to draw again
-                # player.has_flipped_this_turn = True  # REMOVED THIS LINE
                 
+                logger.info(f"🌟 RETURNING WILD CARD RESPONSE: isWildCard=True")
                 return {
                     "success": True,
                     "gameState": game.to_dict(),
-                    "message": f"🌟 Wild Card! These two shapes can now match. Draw another card!",
+                    "message": f"🌟 Wild Card! Draw another card to activate it.",
                     "isWildCard": True,
                     "wildCard": new_card.to_dict()
                 }
@@ -424,6 +438,53 @@ class GameService:
         except Exception as e:
             logger.error(f"Error ending game: {e}")
             return False
+    
+    def _generate_test_deck(self, player_count: int) -> List[Card]:
+        """Generate a test deck with wild card first and fallback categories"""
+        deck = []
+        
+        # Create a wild card as the first card
+        wild_shapes = ["circle", "square"]  # Fixed shapes for testing
+        wild_card = Card(
+            id=str(uuid.uuid4()),
+            shape=CardShape.WILD,
+            category="Wild Card",
+            is_wild=True,
+            wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
+        )
+        deck.append(wild_card)
+        
+        # Add some regular cards with fallback categories for testing
+        test_categories = [
+            "Colors", "Animals", "Foods", "Countries", "Sports",
+            "Movies", "Books", "Cities", "Jobs", "Musical Instruments",
+            "Types of Fruit", "Car Brands", "Holidays", "Weather",
+            "Body Parts", "Clothing", "Furniture", "Tools", "Games",
+            "School Subjects", "Drinks", "Vegetables", "Transportation",
+            "Hobbies", "Seasons", "Emotions", "Shapes", "Numbers",
+            "Letters", "Planets", "Oceans", "Mountains", "Rivers"
+        ]
+        
+        # Create cards with the two wild card shapes for easy testing
+        shapes_to_test = ["circle", "square"]  # These can match due to wild card
+        
+        for i, category in enumerate(test_categories[:20]):  # Limit to 20 cards for testing
+            shape_name = shapes_to_test[i % len(shapes_to_test)]
+            card = Card(
+                id=str(uuid.uuid4()),
+                shape=CardShape[shape_name.upper()],
+                category=category,
+                is_wild=False
+            )
+            deck.append(card)
+        
+        logger.info(f"Generated test deck with {len(deck)} cards (1 wild card + {len(deck)-1} regular cards)")
+        logger.info(f"Wild card allows matching: {wild_shapes}")
+        
+        # Shuffle deck but keep wild card at the top
+        regular_cards = deck[1:]
+        random.shuffle(regular_cards)
+        return [wild_card] + regular_cards
     
     def _generate_initial_deck(self, player_count: int) -> List[Card]:
         """Generate initial deck of Anomia cards with LLM-generated categories"""
