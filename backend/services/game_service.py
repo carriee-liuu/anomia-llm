@@ -12,9 +12,12 @@ logger = logging.getLogger(__name__)
 class GameService:
     """Service for managing game logic and state"""
     
-    def __init__(self, room_service):
+    def __init__(self, room_service, llm_service=None):
         # Reference to RoomService for getting room information
         self.room_service = room_service
+        
+        # Reference to LLMService for generating categories
+        self.llm_service = llm_service
         
         # In-memory storage for active games
         # In production, this would be Redis or a database
@@ -31,20 +34,73 @@ class GameService:
         # Available shapes for Anomia cards (authentic Anomia game shapes)
         self.shapes = ["circle", "square", "plus", "waves", "diamond", "asterisk", "dots", "equals"]
         
-        # Sample categories for each shape
-        self.categories_by_shape = {
-            "circle": ["Pizza", "Wheel", "Coin", "Button", "Clock"],
-            "square": ["Box", "Window", "Book", "Table", "Picture"],
-            "plus": ["Cross", "Plus", "Addition", "Medical", "Church"],
-            "waves": ["Wave", "Squiggle", "Zigzag", "Lightning", "Curve"],
-            "diamond": ["Diamond", "Gem", "Crystal", "Jewel", "Ring"],
-            "asterisk": ["Star", "Asterisk", "Sparkle", "Shine", "Glow"],
-            "dots": ["Dots", "Spots", "Points", "Circles", "Marks"],
-            "equals": ["Pause", "Stop", "Wait", "Break", "Rest"]
+        # Card distribution per shape (static for consistency)
+        self.cards_per_shape = {
+            "circle": 13,      # 13 circle cards per game
+            "square": 13,      # 13 square cards per game
+            "plus": 13,        # 13 plus cards per game
+            "waves": 13,       # 13 wave cards per game
+            "diamond": 13,     # 13 diamond cards per game
+            "asterisk": 13,    # 13 asterisk cards per game
+            "dots": 13,        # 13 dot cards per game
+            "equals": 13,      # 13 equals cards per game
+            "wild": 4         # 4 wild cards per game
         }
         
-        # Wild card categories (just "Wild Card" - no specific names)
-        self.wild_categories = ["Wild Card"]
+        # Fallback categories (used when LLM is not available)
+        self.fallback_categories = anomia_categories = [
+    "Actor",
+    "Actress",
+    "Adjective",
+    "African Animal",
+    "Airline",
+    "Alcoholic Drink",
+    "Animal",
+    "Appliance",
+    "Apparel",
+    "Architectural Style",
+    "Art Movement",
+    "Astronomical Object",
+    "Athlete",
+    "Author",
+    "Automobile",
+    "Beverage",
+    "Body Part",
+    "Book",
+    "Brand",
+    "Candy",
+    "Cartoon Character",
+    "Celebrity",
+    "Cereal",
+    "Cheese",
+    "Chewing Gum",
+    "Child's Toy",
+    "City",
+    "Clothing Item",
+    "Color",
+    "Comic Strip",
+    "Company",
+    "Computer Game",
+    "Country",
+    "Dessert",
+    "Dog Breed",
+    "Drink",
+    "Element",
+    "Famous Athlete",
+    "Famous Chef",
+    "Famous Person",
+    "Fictional Character",
+    "Film",
+    "Flower",
+    "Food",
+    "Fruit",
+    "Game",
+    "Gemstone",
+    "Hair Style",
+    "Holiday",
+    "Ice Cream Flavor"
+]
+
     
     def start_game(self, room_code: str) -> Dict[str, Any]:
         """Start a new game in a room"""
@@ -370,43 +426,80 @@ class GameService:
             return False
     
     def _generate_initial_deck(self, player_count: int) -> List[Card]:
-        """Generate initial deck of Anomia cards with shapes and categories"""
-        deck_size = player_count * self.game_config["cards_per_player"] * 2  # Extra cards for variety
-        
+        """Generate initial deck of Anomia cards with LLM-generated categories"""
         deck = []
-        for i in range(deck_size):
-            # 15% chance for wild card
-            if random.random() < 0.15:
-                # Create wild card
-                wild_shapes = random.sample(self.shapes, 2)  # Pick 2 different shapes
-                category = random.choice(self.wild_categories)
-                
-                card = Card(
-                    id=str(uuid.uuid4()),
-                    shape=CardShape.WILD,
-                    category=category,
-                    difficulty="medium",
-                    is_wild=True,
-                    wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
+        
+        # Calculate total categories needed (excluding wild cards)
+        total_categories_needed = sum(count for shape_name, count in self.cards_per_shape.items() if shape_name != "wild")
+        logger.info(f"Generating {total_categories_needed} total categories for deck")
+        
+        # Generate all categories in one LLM call
+        all_categories = []
+        if self.llm_service:
+            try:
+                # Single LLM call for all categories
+                llm_categories = self.llm_service.generate_categories_for_game(
+                    count=total_categories_needed
                 )
+                all_categories = [cat["category"] for cat in llm_categories]
+                logger.info(f"Generated {len(all_categories)} LLM categories in single call")
+            except Exception as e:
+                logger.warning(f"LLM category generation failed: {e}")
+                # Fallback to predefined categories
+                all_categories = self._get_fallback_categories(total_categories_needed)
+        else:
+            # No LLM service available, use fallback
+            all_categories = self._get_fallback_categories(total_categories_needed)
+        
+        # Distribute categories across shapes
+        category_index = 0
+        
+        # Generate cards for each shape with consistent distribution
+        for shape_name, count in self.cards_per_shape.items():
+            if shape_name == "wild":
+                # Generate wild cards
+                for i in range(count):
+                    wild_shapes = random.sample(self.shapes, 2)  # Pick 2 different shapes
+                    
+                    card = Card(
+                        id=str(uuid.uuid4()),
+                        shape=CardShape.WILD,
+                        category="Wild Card",
+                        is_wild=True,
+                        wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
+                    )
+                    deck.append(card)
             else:
-                # Regular card
-                shape_name = random.choice(self.shapes)
+                # Generate regular cards for this shape
                 shape = CardShape[shape_name.upper()]
-                category = random.choice(self.categories_by_shape[shape_name])
                 
-                card = Card(
-                    id=str(uuid.uuid4()),
-                    shape=shape,
-                    category=category,
-                    difficulty="medium",
-                    is_wild=False
-                )
-            
-            deck.append(card)
+                # Create cards for this shape using pre-generated categories
+                for i in range(count):
+                    if category_index < len(all_categories):
+                        category = all_categories[category_index]
+                        category_index += 1
+                    else:
+                        # Fallback if we run out of categories
+                        category = random.choice(self.fallback_categories)
+                    
+                    card = Card(
+                        id=str(uuid.uuid4()),
+                        shape=shape,
+                        category=category,
+                        is_wild=False
+                    )
+                    deck.append(card)
+        
+        logger.info(f"Generated complete deck with {len(deck)} cards using {len(all_categories)} LLM categories")
         
         # Shuffle deck
         return self._shuffle_deck(deck)
+    
+    def _get_fallback_categories(self, total_needed: int) -> List[str]:
+        """Get fallback categories when LLM is not available"""
+        # Shuffle and return the needed amount
+        random.shuffle(self.fallback_categories)
+        return self.fallback_categories[:total_needed] if len(self.fallback_categories) >= total_needed else self.fallback_categories * (total_needed // len(self.fallback_categories) + 1)
     
     def _deal_cards(self, game: Game):
         """Deal cards to players - NOT USED in Anomia game"""
