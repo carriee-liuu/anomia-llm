@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
-import { Gamepad2, Users, Sparkles, Trophy } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 const HomeScreen = () => {
   const navigate = useNavigate();
@@ -18,209 +19,161 @@ const HomeScreen = () => {
     
     try {
       setIsCreating(true);
-      const result = await createRoom(hostName.trim());
-      if (result.success) {
-        navigate(`/lobby/${result.room.roomCode}`);
+      const data = await createRoom(hostName);
+      console.log('HomeScreen createRoom response:', data);
+      console.log('Room code extracted:', data?.room?.roomCode);
+      if (data && data.room && data.room.roomCode) {
+        console.log('Navigating to:', `/waiting-room/${data.room.roomCode}`);
+        navigate(`/waiting-room/${data.room.roomCode}`);
       }
-    } catch (error) {
-      console.error('Failed to create room:', error);
+    } catch (err) {
+      console.error('Failed to create room:', err);
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleJoinRoom = () => {
+  const handleJoinRoom = async () => {
     if (!roomCode.trim() || !playerName.trim()) return;
     
-    joinRoom(roomCode.trim().toUpperCase(), playerName.trim());
-    navigate(`/lobby/${roomCode.trim().toUpperCase()}`);
+    try {
+      const success = await joinRoom(roomCode, playerName);
+      if (success) {
+        navigate(`/waiting-room/${roomCode}`);
+      }
+    } catch (err) {
+      console.error('Failed to join room:', err);
+    }
   };
 
-  const features = [
-    {
-      icon: <Sparkles className="w-8 h-8 text-yellow-400" />,
-      title: "AI-Powered Categories",
-      description: "Never run out of fresh, creative categories with our LLM integration"
-    },
-    {
-      icon: <Users className="w-8 h-8 text-blue-400" />,
-      title: "Multiplayer Fun",
-      description: "Play with friends in real-time across any device"
-    },
-    {
-      icon: <Gamepad2 className="w-8 h-8 text-green-400" />,
-      title: "Fast-Paced Action",
-      description: "Quick thinking and fast answers in this exciting party game"
-    },
-    {
-      icon: <Trophy className="w-8 h-8 text-purple-400" />,
-      title: "Competitive Scoring",
-      description: "Track points and compete for the highest score"
-    }
-  ];
-
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <motion.header 
-        className="text-center py-8"
+    <div className="h-screen overflow-hidden flex flex-col items-center justify-between p-4 md:p-6 bg-background">
+      {/* Top section - Logo and tagline */}
+      <motion.div 
+        className="w-full max-w-md pt-4 md:pt-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-6xl font-bold text-white mb-4">
-          Anomia <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">LLM</span>
-        </h1>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-          The AI-powered party word game that never runs out of categories. 
-          Race against friends to name examples from dynamic categories!
+        <div className="flex justify-center mb-4 md:mb-6 px-2 md:px-4">
+          <div className="bg-background border-[4px] md:border-[8px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,0.4)] px-8 md:px-16 py-4 md:py-8 w-full">
+            <h1 className="font-heading text-4.5xl md:text-7xl text-primary tracking-wider md:tracking-widest text-center">ANOMIA</h1>
+          </div>
+        </div>
+        <p className="font-sans text-base md:text-xl text-center font-bold tracking-wide text-foreground">
+          Match symbols, race to name categories!
         </p>
-      </motion.header>
+      </motion.div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-8 px-4 max-w-7xl mx-auto">
-        {/* Left Side - Game Actions */}
-        <motion.div 
-          className="flex-1 space-y-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          {/* Create Room */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-              <Gamepad2 className="w-6 h-6" />
-              Create New Game
-            </h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter your name"
-                value={hostName}
-                onChange={(e) => setHostName(e.target.value)}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <button
-                onClick={handleCreateRoom}
-                disabled={!hostName.trim() || loading || isCreating}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
-              >
-                {isCreating ? 'Creating Room...' : 'Create Room'}
-              </button>
-            </div>
-          </div>
-
-          {/* Join Room */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-              <Users className="w-6 h-6" />
-              Join Existing Game
-            </h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter room code"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value)}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 uppercase"
-                maxLength={6}
-              />
-              <input
-                type="text"
-                placeholder="Enter your name"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <button
-                onClick={handleJoinRoom}
-                disabled={!roomCode.trim() || !playerName.trim() || loading}
-                className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold py-3 px-6 rounded-lg hover:from-green-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
-              >
-                Join Room
-              </button>
-            </div>
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <motion.div 
-              className="bg-red-500/20 border border-red-500/30 rounded-lg p-4"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-            >
-              <p className="text-red-300">{error}</p>
-              <button 
-                onClick={clearError}
-                className="text-red-400 hover:text-red-300 text-sm mt-2"
-              >
-                Dismiss
-              </button>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Right Side - Features */}
-        <motion.div 
-          className="flex-1 space-y-6"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              Why Choose Anomia LLM?
-            </h2>
-            <div className="space-y-6">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  className="flex items-start gap-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                >
-                  <div className="flex-shrink-0">
-                    {feature.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-300">
-                      {feature.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* How to Play */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <h3 className="text-xl font-bold text-white mb-4">How to Play</h3>
-            <ol className="list-decimal list-inside space-y-2 text-gray-300">
-              <li>Create or join a room with friends</li>
-              <li>Each player gets cards with categories</li>
-              <li>When cards match, race to name an example!</li>
-              <li>First to answer correctly gets a point</li>
-              <li>Play multiple rounds to determine the winner</li>
-            </ol>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Footer */}
-      <motion.footer 
-        className="text-center py-6 text-gray-400"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
+      {/* Middle section - Card illustration */}
+      <motion.div 
+        className="flex-1 flex items-center justify-center py-2 md:py-4 max-h-[40vh]"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
       >
-        <p>Built with React, Node.js, and AI magic ✨</p>
-      </motion.footer>
+        <div className="relative w-48 h-48 md:w-80 md:h-80">
+          {/* Card 1 - Orange/Gold */}
+          <div className="absolute top-0 left-4 md:left-8 w-32 h-44 md:w-48 md:h-64 bg-accent border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transform -rotate-12 flex items-center justify-center">
+            <div className="text-6xl md:text-9xl text-white">★</div>
+          </div>
+          {/* Card 2 - Magenta/Purple */}
+          <div className="absolute top-2 md:top-4 right-4 md:right-8 w-32 h-44 md:w-48 md:h-64 bg-primary border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transform rotate-12 flex items-center justify-center">
+            <div className="text-6xl md:text-9xl text-white">●●</div>
+          </div>
+          {/* Decorative sparkles */}
+          <div className="absolute -top-2 md:-top-4 left-0 text-2xl md:text-4xl opacity-70">✦</div>
+          <div className="absolute top-4 md:top-8 -right-2 md:-right-4 text-xl md:text-3xl opacity-70">✧</div>
+          <div className="absolute -bottom-1 md:-bottom-2 left-8 md:left-12 text-lg md:text-2xl opacity-70">✦</div>
+          <div className="absolute bottom-2 md:bottom-4 right-0 text-xl md:text-3xl opacity-70">○</div>
+        </div>
+      </motion.div>
+
+      {/* Bottom section - Buttons and How to Play */}
+      <motion.div 
+        className="w-full max-w-md pb-4 md:pb-8 space-y-3 md:space-y-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+      >
+        {/* Create Room Form */}
+        <div className="bg-card border-[4px] md:border-[6px] border-foreground p-4 md:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] space-y-4 md:space-y-6">
+          <div>
+            <label className="font-sans text-sm mb-2 block font-bold text-foreground">YOUR NAME</label>
+            <Input
+              type="text"
+              placeholder="Enter your name"
+              value={hostName}
+              onChange={(e) => setHostName(e.target.value)}
+              className="h-12 md:h-14 font-sans text-base md:text-lg border-[4px] border-foreground bg-background focus:ring-0 focus:border-primary text-foreground"
+            />
+          </div>
+
+          <Button
+            onClick={handleCreateRoom}
+            disabled={!hostName.trim() || loading || isCreating}
+            className="w-full h-14 md:h-16 font-heading text-lg md:text-xl bg-background hover:bg-muted text-foreground border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCreating ? 'Creating Room...' : 'CREATE ROOM'}
+          </Button>
+        </div>
+
+        {/* Join Room Form */}
+        <div className="bg-card border-[4px] md:border-[6px] border-foreground p-4 md:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] space-y-4 md:space-y-6">
+          <div>
+            <label className="font-sans text-sm mb-2 block font-bold text-foreground">ROOM CODE</label>
+            <Input
+              type="text"
+              placeholder="Enter room code"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+              className="h-12 md:h-14 font-sans text-base md:text-lg border-[4px] border-foreground bg-background focus:ring-0 focus:border-accent uppercase tracking-wider text-foreground"
+            />
+          </div>
+
+          <div>
+            <label className="font-sans text-sm mb-2 block font-bold text-foreground">YOUR NAME</label>
+            <Input
+              type="text"
+              placeholder="Enter your name"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              className="h-12 md:h-14 font-sans text-base md:text-lg border-[4px] border-foreground bg-background focus:ring-0 focus:border-primary text-foreground"
+            />
+          </div>
+
+          <Button
+            onClick={handleJoinRoom}
+            disabled={!roomCode.trim() || !playerName.trim() || loading}
+            className="w-full h-14 md:h-16 font-heading text-lg md:text-xl bg-background hover:bg-muted text-foreground border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            JOIN ROOM
+          </Button>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <motion.div 
+            className="bg-destructive/20 border border-destructive/30 rounded-lg p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <p className="text-destructive-foreground">{error}</p>
+            <button 
+              onClick={clearError}
+              className="text-destructive-foreground/70 hover:text-destructive-foreground text-sm mt-2"
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+
+        <button className="w-full font-sans text-sm md:text-lg underline opacity-70 hover:opacity-100 transition-opacity py-1 md:py-2 text-foreground">
+          How to play
+        </button>
+      </motion.div>
     </div>
   );
 };
 
-export default HomeScreen; 
+export default HomeScreen;

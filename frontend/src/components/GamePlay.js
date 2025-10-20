@@ -78,14 +78,40 @@ const GamePlay = () => {
 
   // Handle card flip
   const handleFlipCard = async () => {
-    if (isFlipping || !isMyTurn() || hasFlippedThisTurn()) return;
-    
-    setIsFlipping(true);
     try {
+      console.log('🔄 handleFlipCard called');
+      console.log('🔄 isFlipping:', isFlipping);
+      
+      console.log('🔄 Checking isMyTurn()...');
+      const myTurn = isMyTurn();
+      console.log('🔄 isMyTurn():', myTurn);
+      
+      console.log('🔄 Checking hasFlippedThisTurn()...');
+      const hasFlipped = hasFlippedThisTurn();
+      console.log('🔄 hasFlippedThisTurn():', hasFlipped);
+      
+      console.log('🔄 gameStatus:', gameStatus);
+      console.log('🔄 state.socket:', state.socket);
+      console.log('🔄 state.socket?.readyState:', state.socket?.readyState);
+      
+      if (isFlipping || !myTurn || hasFlipped) {
+        console.log('❌ Flip card blocked by conditions');
+        console.log('❌ isFlipping:', isFlipping);
+        console.log('❌ !myTurn:', !myTurn);
+        console.log('❌ hasFlipped:', hasFlipped);
+        return;
+      }
+      
+      console.log('✅ Flip card conditions passed, proceeding...');
+      setIsFlipping(true);
+      
+      console.log('🔄 Calling flipCard()...');
       await flipCard();
+      console.log('✅ flipCard() called successfully');
       // Card flip logic will be handled by WebSocket events
     } catch (error) {
-      console.error('Failed to flip card:', error);
+      console.error('❌ Error in handleFlipCard:', error);
+      console.error('❌ Error stack:', error.stack);
     } finally {
       setIsFlipping(false);
     }
@@ -544,6 +570,12 @@ const GamePlay = () => {
                           You've already flipped a card this turn
                         </div>
                       )}
+                      {/* Debug info */}
+                      <div className="text-xs text-gray-500 mt-2">
+                        WebSocket: {state.socket?.readyState === 1 ? '✅ Connected' : '❌ Disconnected'}
+                        <br />
+                        Socket State: {state.socket?.readyState}
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center">
@@ -560,7 +592,19 @@ const GamePlay = () => {
                 </div>
 
                 <button
-                  onClick={handleFlipCard}
+                  onClick={(e) => {
+                    console.log('🖱️ Button clicked!');
+                    console.log('🖱️ Event:', e);
+                    console.log('🖱️ Button disabled?', e.target.disabled);
+                    console.log('🖱️ Button className:', e.target.className);
+                    try {
+                      console.log('🔄 About to call handleFlipCard...');
+                      handleFlipCard();
+                      console.log('✅ handleFlipCard called successfully');
+                    } catch (error) {
+                      console.error('❌ Error calling handleFlipCard:', error);
+                    }
+                  }}
                   disabled={isFlipping || gameStatus === 'faceoff' || !isMyTurn() || hasFlippedThisTurn()}
                   className={`mt-2 px-8 py-3 rounded-lg font-bold transition-all duration-200 ${
                     isFlipping || gameStatus === 'faceoff' || !isMyTurn() || hasFlippedThisTurn()

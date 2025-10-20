@@ -409,11 +409,23 @@ export const GameProvider = ({ children }) => {
 
     // Flip a card
     flipCard: () => {
+      console.log('🔄 flipCard called');
+      console.log('🔄 state.socket:', state.socket);
+      console.log('🔄 state.socket?.readyState:', state.socket?.readyState);
+      console.log('🔄 state.currentPlayer:', state.currentPlayer);
+      
       if (state.socket && state.socket.readyState === WebSocket.OPEN) {
-        state.socket.send(JSON.stringify({
+        const message = {
           type: 'flipCard',
           playerId: state.currentPlayer?.id
-        }));
+        };
+        console.log('📤 Sending flipCard message:', message);
+        state.socket.send(JSON.stringify(message));
+        console.log('✅ flipCard message sent');
+      } else {
+        console.log('❌ Cannot send flipCard message - socket not ready');
+        console.log('❌ Socket state:', state.socket?.readyState);
+        dispatch({ type: 'SET_ERROR', payload: 'Not connected to server' });
       }
     },
 

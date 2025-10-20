@@ -6,18 +6,52 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'game-primary': '#667eea',
-        'game-secondary': '#764ba2',
-        'game-accent': '#f093fb',
-        'game-warning': '#f5576c',
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
+        },
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontSize: {
+        '4.5xl': ['2.5rem', { lineHeight: '2.75rem' }],
       },
       animation: {
         'bounce-slow': 'bounce 2s infinite',
         'pulse-slow': 'pulse 3s infinite',
         'spin-slow': 'spin 3s linear infinite',
-      },
-      fontFamily: {
-        'game': ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'game': '0 8px 32px rgba(0, 0, 0, 0.3)',

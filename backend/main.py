@@ -31,8 +31,8 @@ app.add_middleware(
 
 # Initialize services
 room_service = RoomService()
-game_service = GameService(room_service)
 llm_service = LLMService()
+game_service = GameService(room_service, llm_service)
 
 # Store active WebSocket connections
 active_connections: Dict[str, WebSocket] = {}
@@ -46,6 +46,31 @@ async def health_check():
         "message": "Anomia LLM Python Backend Running",
         "timestamp": datetime.now().isoformat()
     }
+
+# LLM service status endpoint
+@app.get("/llm/status")
+async def llm_status():
+    """Get LLM service status and configuration"""
+    return llm_service.get_service_status()
+
+# Test LLM category generation endpoint
+@app.get("/llm/test-categories")
+async def test_llm_categories(count: int = 5):
+    """Test LLM category generation"""
+    try:
+        categories = llm_service.generate_categories_for_game(count)
+        return {
+            "success": True,
+            "categories": categories,
+            "count": len(categories)
+        }
+    except Exception as e:
+        logger.error(f"Error testing LLM categories: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "fallback_categories": llm_service._generate_fallback_categories(count)
+        }
 
 # API Routes
 @app.post("/api/rooms")

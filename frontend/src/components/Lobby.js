@@ -23,6 +23,10 @@ const Lobby = () => {
     messages 
   } = useGame();
   
+  // Debug logging
+  console.log('Lobby roomCode from useParams:', roomCode);
+  console.log('Type of roomCode:', typeof roomCode);
+  
   const [copied, setCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [gameSettings, setGameSettings] = useState({
@@ -34,7 +38,8 @@ const Lobby = () => {
   // Copy room code to clipboard
   const copyRoomCode = async () => {
     try {
-      await navigator.clipboard.writeText(roomCode);
+      const codeToCopy = typeof roomCode === 'string' ? roomCode : JSON.stringify(roomCode);
+      await navigator.clipboard.writeText(codeToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -72,7 +77,9 @@ const Lobby = () => {
           <div className="flex items-center justify-center gap-4">
             <div className="bg-white/20 backdrop-blur-lg rounded-lg px-4 py-2">
               <span className="text-gray-300 text-sm">Room Code:</span>
-              <span className="text-white font-mono text-xl ml-2">{roomCode}</span>
+              <span className="text-white font-mono text-xl ml-2">
+                {typeof roomCode === 'string' ? roomCode : roomCode?.roomCode || 'Loading...'}
+              </span>
               <button
                 onClick={copyRoomCode}
                 className="ml-3 text-blue-400 hover:text-blue-300 transition-colors"
