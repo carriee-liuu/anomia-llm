@@ -87,9 +87,11 @@ class LLMService:
             
             GENRE DIVERSITY REQUIREMENTS:
             - Spread categories across MANY different themes/genres
-            - Do NOT cluster similar themes (e.g., avoid multiple superhero, food, or animal categories)
+            - Do NOT cluster similar themes (e.g., avoid multiple board game, food, or animal categories)
+            - MAXIMUM 1 category per theme/genre (e.g., only 1 board game category, 1 food category, etc.)
             - Mix categories from: food, entertainment, nature, technology, sports, geography, science, arts, etc.
             - Ensure variety in subject matter and difficulty level
+            - Each category must be from a DIFFERENT domain/subject area
             
             FORMAT REQUIREMENTS:
             - Do NOT start categories with "Type of" (e.g., avoid "Type of Cheese", use "Cheese" instead)
@@ -97,27 +99,29 @@ class LLMService:
             - Do NOT start categories with "Brand of" (e.g., avoid "Brand of Chocolate", use "Chocolate Brand" instead)
             - Use direct, concise category names
             
-            EXCELLENT examples (diverse genres - mix these categories):
+            CRITICAL: Categories must be REAL THINGS that exist in the world, not abstract concepts or themes.
             
-            FOOD & DRINK: "Shampoo Brand", "Fast Food Chain", "Soda Brand", "Candy Bar", "Ice Cream Flavor", "Spicy Food", "Cheese"
+            EXCELLENT examples (real, concrete things people can name):
             
-            NATURE & ANIMALS: "Dog Breed", "Fruit", "Flower", "Bird", "Fish", "Tree", "Insect"
+            FOOD & DRINK: "Shampoo Brand", "Fast Food Chain", "Soda Brand", "Candy Bar", "Ice Cream Flavor", "Spicy Food", "Cheese", "Pizza Topping", "Breakfast Cereal", "Coffee Brand"
             
-            ENTERTAINMENT: "Movie Genre", "Musical Instrument", "Board Game", "Superhero", "Disney Princess", "TV Show", "Book Genre"
+            NATURE & ANIMALS: "Dog Breed", "Fruit", "Flower", "Bird", "Fish", "Tree", "Insect", "Mammal", "Reptile", "Ocean Animal"
             
-            TECHNOLOGY: "Car Brand", "Video Game Console", "Social Media Platform", "App", "Website"
+            ENTERTAINMENT: "Movie Genre", "Musical Instrument", "Board Game", "Superhero", "Disney Princess", "TV Show", "Book Genre", "Song Title", "Actor", "Singer"
             
-            GEOGRAPHY: "City in California", "Country in Europe", "Famous Landmark", "Mountain", "River"
+            TECHNOLOGY: "Car Brand", "Video Game Console", "Social Media Platform", "App", "Website", "Phone Brand", "Computer Brand", "Software", "Operating System"
             
-            SPORTS & ACTIVITIES: "Sport", "Outdoor Activity", "Exercise", "Hobby", "Game"
+            GEOGRAPHY: "City in California", "Country in Europe", "Famous Landmark", "Mountain", "River", "Ocean", "Desert", "Island", "Capital City", "State"
             
-            SCIENCE: "Element on Periodic Table", "Planet", "Chemical", "Disease", "Invention"
+            SPORTS & ACTIVITIES: "Sport", "Outdoor Activity", "Exercise", "Hobby", "Olympic Sport", "Team Sport", "Individual Sport", "Water Sport", "Winter Sport"
             
-            ARTS & CULTURE: "Art Style", "Music Genre", "Dance Style", "Architecture Style", "Literary Genre"
+            SCIENCE: "Element on Periodic Table", "Planet", "Chemical", "Disease", "Invention", "Scientist", "Medical Condition", "Body Part", "Organ", "Bone"
             
-            DAILY LIFE: "Kitchen Appliance", "Clothing Item", "Tool", "Household Item", "Office Supply"
+            ARTS & CULTURE: "Art Style", "Music Genre", "Dance Style", "Architecture Style", "Literary Genre", "Painter", "Composer", "Writer", "Artist", "Musician"
             
-            AVOID these vague categories:
+            DAILY LIFE: "Kitchen Appliance", "Clothing Item", "Tool", "Household Item", "Office Supply", "Furniture", "Vehicle", "Building", "Room in House", "School Subject"
+            
+            AVOID these bad categories:
             - "Brand" (too broad - could be anything)
             - "Food" (too broad)
             - "Colors" (too easy)
@@ -125,6 +129,15 @@ class LLMService:
             - "Stuff" (meaningless)
             - "Items" (too vague)
             - "Objects" (too vague)
+            - "Board Game Theme" (not a real thing people can name)
+            - "Board Game Token" (not a real thing people can name)
+            - "Game Piece" (too vague)
+            - "Theme" (abstract concept)
+            - "Style" (too abstract)
+            - "Genre" (too abstract without context)
+            - "Category" (meta-category, not real)
+            - "Concept" (too abstract)
+            - "Idea" (too abstract)
             
             Return EXACTLY {count} UNIQUE categories in this exact JSON format:
             [
