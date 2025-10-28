@@ -142,8 +142,8 @@ class GameService:
                 )
                 game.add_player(player)
             
-            # Generate initial deck (using test deck for wild card testing)
-            game.deck = self._generate_test_deck(len(room["players"]))
+            # Generate game deck
+            game.deck = self._generate_initial_deck(len(room["players"]))
             
             # In Anomia, players start with empty decks and get cards by flipping
             # No initial card dealing - players flip cards during their turns
@@ -440,36 +440,17 @@ class GameService:
             return False
     
     def _generate_test_deck(self, player_count: int) -> List[Card]:
-        """Generate a test deck with wild card first and fallback categories"""
+        """Generate a test deck with all 8 shapes for design testing"""
         deck = []
         
-        # Create a wild card as the first card
-        wild_shapes = ["circle", "square"]  # Fixed shapes for testing
-        wild_card = Card(
-            id=str(uuid.uuid4()),
-            shape=CardShape.WILD,
-            category="Wild Card",
-            is_wild=True,
-            wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
-        )
-        deck.append(wild_card)
-        
-        # Add some regular cards with fallback categories for testing
+        # Create cards for each of the 8 shapes for design testing
+        all_shapes = ["circle", "square", "plus", "waves", "diamond", "asterisk", "dots", "equals"]
         test_categories = [
-            "Colors", "Animals", "Foods", "Countries", "Sports",
-            "Movies", "Books", "Cities", "Jobs", "Musical Instruments",
-            "Types of Fruit", "Car Brands", "Holidays", "Weather",
-            "Body Parts", "Clothing", "Furniture", "Tools", "Games",
-            "School Subjects", "Drinks", "Vegetables", "Transportation",
-            "Hobbies", "Seasons", "Emotions", "Shapes", "Numbers",
-            "Letters", "Planets", "Oceans", "Mountains", "Rivers"
+            "Circle Shape", "Square Shape", "Plus Shape", "Waves Shape", 
+            "Diamond Shape", "Asterisk Shape", "Dots Shape", "Equals Shape"
         ]
         
-        # Create cards with the two wild card shapes for easy testing
-        shapes_to_test = ["circle", "square"]  # These can match due to wild card
-        
-        for i, category in enumerate(test_categories[:20]):  # Limit to 20 cards for testing
-            shape_name = shapes_to_test[i % len(shapes_to_test)]
+        for shape_name, category in zip(all_shapes, test_categories):
             card = Card(
                 id=str(uuid.uuid4()),
                 shape=CardShape[shape_name.upper()],
@@ -478,13 +459,19 @@ class GameService:
             )
             deck.append(card)
         
-        logger.info(f"Generated test deck with {len(deck)} cards (1 wild card + {len(deck)-1} regular cards)")
-        logger.info(f"Wild card allows matching: {wild_shapes}")
+        # Add a wild card for testing
+        wild_card = Card(
+            id=str(uuid.uuid4()),
+            shape=CardShape.WILD,
+            category="Wild Card",
+            is_wild=True,
+            wild_shapes=[CardShape.CIRCLE, CardShape.SQUARE]
+        )
+        deck.append(wild_card)
         
-        # Shuffle deck but keep wild card at the top
-        regular_cards = deck[1:]
-        random.shuffle(regular_cards)
-        return [wild_card] + regular_cards
+        logger.info(f"Generated test deck with {len(deck)} cards (8 shape cards + 1 wild card)")
+        
+        return deck
     
     def _generate_initial_deck(self, player_count: int) -> List[Card]:
         """Generate initial deck of Anomia cards with LLM-generated categories"""

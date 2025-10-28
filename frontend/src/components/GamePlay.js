@@ -302,40 +302,32 @@ const GamePlay = () => {
     gameStateFaceoff: gameState?.currentFaceoff
   });
 
-  // Faceoff UI - REMOVED: No visual face-off indicators
-  // Players must spot matches themselves and use "I Lost" button
-  // if (faceoff) { ... }
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Game Header - Fixed at top */}
+      {/* Score Card Header - Fixed at top */}
       <motion.header 
         className="text-center py-4 px-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-1">
           <div className="bg-background border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] px-6 md:px-12 py-3 md:py-6 w-full max-w-lg">
             <div className="text-center">
-              <h1 className="font-heading text-2xl md:text-3xl text-primary tracking-wider md:tracking-widest mb-2">
+              <h1 className="font-heading text-3xl md:text-4xl text-primary tracking-wider md:tracking-widest mb-4">
                 SCORES
               </h1>
               <div className="flex justify-center items-center gap-4 md:gap-6">
                 {getPlayerScores().slice(0, 3).map((player, index) => (
                   <div key={player.id} className="flex flex-col items-center">
-                    <div className={`w-8 h-8 md:w-10 md:h-10 border-[3px] border-foreground flex items-center justify-center text-sm md:text-base font-heading ${
-                      index === 0 ? 'bg-accent text-white' : 
-                      index === 1 ? 'bg-muted text-foreground' : 
-                      'bg-primary text-white'
+                    <div className={`w-8 h-8 md:w-10 md:h-10 border-[3px] border-foreground flex items-center justify-center text-sm md:text-base font-heading text-center ${
+                      player.id === currentPlayer?.id ? 'bg-accent text-white' : 
+                      'bg-secondary text-foreground'
                     }`}>
-                      {index + 1}
-                    </div>
-                    <span className="font-sans text-xs md:text-sm text-foreground font-bold mt-1">
-                      {player.name}
-                    </span>
-                    <span className="font-heading text-sm md:text-base text-primary">
                       {player.score}
-                    </span>
+                    </div>
+                     <span className="font-sans text-sm md:text-base text-foreground font-bold mt-1">
+                       {player.name}
+                     </span>
                   </div>
                 ))}
               </div>
@@ -344,73 +336,152 @@ const GamePlay = () => {
         </div>
       </motion.header>
 
+      {/* Wild Card Banner - Between Scores and Card */}
+      {gameState?.currentWildCard && (
+        <motion.div 
+          className="w-full max-w-md mx-auto px-4 mb-4"
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <div className="bg-gradient-to-r from-accent via-primary to-accent border-[4px] border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] p-4 rounded-sm">
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-xs md:text-sm font-heading text-white uppercase tracking-wide">
+                Wild Card:
+              </span>
+              <div className="bg-background border-[2px] border-foreground rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
+                {gameState?.currentWildCard?.wild_shapes?.[0] ? (
+                  <AnomiaShape 
+                    shape={gameState.currentWildCard.wild_shapes[0]} 
+                    size={24} 
+                    color="#a71b86" 
+                  />
+                ) : (
+                  <span className="text-foreground">?</span>
+                )}
+              </div>
+              <span className="text-base md:text-lg font-heading text-white">=</span>
+              <div className="bg-background border-[2px] border-foreground rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
+                {gameState?.currentWildCard?.wild_shapes?.[1] ? (
+                  <AnomiaShape 
+                    shape={gameState.currentWildCard.wild_shapes[1]} 
+                    size={24} 
+                    color="#a71b86" 
+                  />
+                ) : (
+                  <span className="text-foreground">?</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Main Game Area - Card and Buttons */}
-      <div className="flex flex-col items-center justify-center px-4 py-0 min-h-[calc(100vh-200px)]">
+      <div className="flex flex-col items-center justify-center px-4 py-0 pb-6 min-h-[calc(100vh-200px)]">
         {/* Current Player's Card - Large and Prominent */}
-        <div className="w-full max-w-md mb-2">
+        <div className="w-full max-w-md mb-4">
           {getCurrentPlayerCard() ? (
             <motion.div
-              className="bg-primary border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-8 mx-auto aspect-[2/3] flex flex-col justify-between"
+              className={`border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[480px] md:h-[480px]' : 'aspect-[2/3]'} flex flex-col justify-between ${
+
+                getCurrentPlayerCard().is_wild 
+                  ? 'bg-gradient-to-br from-[oklch(0.75_0.15_60)] via-[oklch(0.65_0.2_350)] to-[oklch(0.55_0.18_310)] wild-card-float' 
+                  : 'bg-primary'
+              }`}
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               {/* Top Category Text - Upside Down */}
               <div className="text-center px-2">
-                <h4 className={`font-heading text-white mb-4 text-center transform rotate-180 break-words ${
-                  getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 15 
-                    ? 'text-lg' 
-                    : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 10 
-                    ? 'text-xl' 
-                    : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 6
-                    ? 'text-2xl'
-                    : 'text-3xl'
-                }`}>
-                  {getCurrentPlayerCard().is_wild ? "WILD CARD" : getCurrentPlayerCard().category}
-                </h4>
+                {!getCurrentPlayerCard().is_wild && (
+                  <h4 className={`font-heading text-white mb-4 text-center transform rotate-180 break-words ${
+                    getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 15 
+                      ? 'text-xl' 
+                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 10 
+                      ? 'text-2xl' 
+                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 6
+                      ? 'text-3xl'
+                      : 'text-4xl'
+                  }`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
+                    {getCurrentPlayerCard().category}
+                  </h4>
+                )}
               </div>
 
               {/* Center Symbol */}
               <div className="flex justify-center items-center flex-1">
                 {getCurrentPlayerCard().is_wild ? (
-                  <div className="flex justify-center gap-4">
-                    <AnomiaShape 
-                      shape={getCurrentPlayerCard().wild_shapes?.[0]} 
-                      size={80} 
-                      color="#ffffff" 
-                    />
-                    <AnomiaShape 
-                      shape={getCurrentPlayerCard().wild_shapes?.[1]} 
-                      size={80} 
-                      color="#ffffff" 
-                    />
+                  <div className="flex flex-col items-center justify-between h-full w-full">
+                    {/* Top text (upside down) */}
+                    <div className="font-heading font-bold text-white text-3xl text-center tracking-wider drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] rotate-180">
+                      WILD CARD
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center gap-6">
+                      {/* Wild card shapes with equals sign */}
+                      <div className="flex items-center gap-4">
+                        <AnomiaShape 
+                          shape={getCurrentPlayerCard().wild_shapes?.[0]} 
+                          size={80} 
+                          color="#ffffff" 
+                        />
+                        <span className="text-2xl font-heading font-bold text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)]">
+                          =
+                        </span>
+                        <AnomiaShape 
+                          shape={getCurrentPlayerCard().wild_shapes?.[1]} 
+                          size={80} 
+                          color="#ffffff" 
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bottom text (right-side up) */}
+                    <div className="font-heading font-bold text-white text-3xl text-center tracking-wider drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)]">
+                      WILD CARD
+                    </div>
                   </div>
                 ) : (
                   <AnomiaShape 
                     shape={getCurrentPlayerCard().shape} 
                     size={100} 
-                    color="#ffffff" 
+         color={
+           getCurrentPlayerCard().shape === 'circle' ? '#22C55E' :
+           getCurrentPlayerCard().shape === 'square' ? '#F59E0B' :
+           getCurrentPlayerCard().shape === 'plus' ? '#9333EA' :
+           getCurrentPlayerCard().shape === 'waves' ? '#06B6D4' :
+           getCurrentPlayerCard().shape === 'diamond' ? '#DC2626' :
+           getCurrentPlayerCard().shape === 'asterisk' ? '#14B8A6' :
+           getCurrentPlayerCard().shape === 'dots' ? '#EC4899' :
+           getCurrentPlayerCard().shape === 'equals' ? '#84CC16' :
+           '#ffffff'
+         }
                   />
                 )}
               </div>
 
               {/* Bottom Category Text - Right Side Up */}
               <div className="text-center px-2">
-                <h4 className={`font-heading text-white mb-4 text-center break-words ${
-                  getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 15 
-                    ? 'text-lg' 
-                    : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 10 
-                    ? 'text-xl' 
-                    : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 6
-                    ? 'text-2xl'
-                    : 'text-3xl'
-                }`}>
-                  {getCurrentPlayerCard().is_wild ? "WILD CARD" : getCurrentPlayerCard().category}
-                </h4>
+                {!getCurrentPlayerCard().is_wild && (
+                  <h4 className={`font-heading text-white mb-4 text-center break-words ${
+                    getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 15 
+                      ? 'text-xl' 
+                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 10 
+                      ? 'text-2xl' 
+                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 6
+                      ? 'text-3xl'
+                      : 'text-4xl'
+                  }`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
+                    {getCurrentPlayerCard().category}
+                  </h4>
+                )}
               </div>
             </motion.div>
           ) : (
             <motion.div
-              className="bg-background border-[4px] border-dashed border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-8 mx-auto aspect-[2/3] flex flex-col justify-center items-center"
+              className={`bg-background border-[4px] border-dashed border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[460px]' : 'aspect-[2/3]'} flex flex-col justify-center items-center`}
               initial={{ opacity: 0.5 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
@@ -433,7 +504,7 @@ const GamePlay = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="w-full max-w-md space-y-4">
+        <div className="w-full max-w-md space-y-6">
           {/* Flip Card Button */}
           <button
             onClick={(e) => {
@@ -464,12 +535,12 @@ const GamePlay = () => {
             ) : hasFlippedThisTurn() ? (
               <>
                 <CheckCircle className="w-5 h-5 inline mr-2" />
-                DRAW
+                {getCurrentPlayerCard()?.is_wild ? "WILD CARD! DRAW NEXT" : "DRAW"}
               </>
             ) : !isMyTurn() ? (
               <>
                 <Clock className="w-5 h-5 inline mr-2" />
-                NOT YOUR TURN
+                DRAW
               </>
             ) : (
               <>
@@ -490,187 +561,7 @@ const GamePlay = () => {
         </div>
       </div>
 
-      {/* Wild Card Banner - Under Scores */}
-      {gameState?.currentWildCard && (
-        <motion.div 
-          className="w-full max-w-4xl mx-auto px-4 mb-4"
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        >
-          <div className="bg-gradient-to-r from-accent via-primary to-accent border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] py-4 px-6 relative overflow-hidden">
-            {/* Decorative corner elements */}
-            <div className="absolute top-2 left-2 w-6 h-6 border-[3px] border-white rotate-45"></div>
-            <div className="absolute top-2 right-2 w-6 h-6 border-[3px] border-white rotate-45"></div>
-            <div className="absolute bottom-2 left-2 w-6 h-6 border-[3px] border-white rotate-45"></div>
-            <div className="absolute bottom-2 right-2 w-6 h-6 border-[3px] border-white rotate-45"></div>
-            
-            {/* Main content */}
-            <div className="flex items-center justify-center gap-6 text-center relative z-10">
-              {/* Left decorative elements */}
-              <div className="flex items-center gap-2">
-                <span className="text-2xl animate-pulse">✨</span>
-                <span className="text-2xl animate-bounce">🎯</span>
-                <span className="text-2xl animate-pulse">✨</span>
-              </div>
-              
-              {/* Center content with matching shapes */}
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-4 mb-2">
-                  {/* Display the matching shapes */}
-                  {gameState?.currentWildCard?.wild_shapes ? (
-                    gameState.currentWildCard.wild_shapes.map((shape, index) => (
-                      <div key={index} className="flex flex-col items-center">
-                        <div className="w-12 h-12 bg-white/20 border-[3px] border-white rounded-lg flex items-center justify-center mb-1">
-                          <AnomiaShape 
-                            shape={shape} 
-                            size={32} 
-                            color="#ffffff" 
-                          />
-                        </div>
-                        <span className="font-sans text-xs text-white/80 font-bold uppercase">
-                          {shape}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    // Fallback when no currentWildCard data
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/20 border-[3px] border-white rounded-lg flex items-center justify-center mb-1">
-                        <span className="text-white font-heading text-lg">?</span>
-                      </div>
-                      <span className="text-white font-heading text-2xl mx-2">+</span>
-                      <div className="w-12 h-12 bg-white/20 border-[3px] border-white rounded-lg flex items-center justify-center mb-1">
-                        <span className="text-white font-heading text-lg">?</span>
-                      </div>
-                    </div>
-                  )}
-                  {/* Plus sign between shapes */}
-                  {gameState?.currentWildCard?.wild_shapes && gameState.currentWildCard.wild_shapes.length > 1 && (
-                    <div className="flex items-center">
-                      <span className="text-white font-heading text-2xl mx-2">+</span>
-                    </div>
-                  )}
-                </div>
-                
-                <span className="font-heading font-bold text-lg text-white leading-tight mb-1">
-                  WILD CARD ACTIVE
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
-                  <span className="font-sans text-sm text-white/90 font-bold">
-                    {gameState?.currentWildCard ? "These shapes can now match!" : "Wild card is in play!"}
-                  </span>
-                  <div className="w-2 h-2 bg-white rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-                </div>
-              </div>
-              
-              {/* Right decorative elements */}
-              <div className="flex items-center gap-2">
-                <span className="text-2xl animate-pulse">✨</span>
-                <span className="text-2xl animate-bounce">🎯</span>
-                <span className="text-2xl animate-pulse">✨</span>
-              </div>
-            </div>
-            
-            {/* Animated background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-1/4 left-1/4 w-8 h-8 border-2 border-white rotate-45 animate-spin" style={{animationDuration: '3s'}}></div>
-              <div className="absolute top-3/4 right-1/4 w-6 h-6 border-2 border-white rotate-45 animate-spin" style={{animationDuration: '2s', animationDirection: 'reverse'}}></div>
-            </div>
-          </div>
-        </motion.div>
-      )}
 
-      {/* Scrollable Content Below */}
-      <div className="px-4 pb-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Game Info */}
-          <div className="flex items-center justify-center gap-6 text-foreground mb-8">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-accent" />
-              <span className="font-sans font-bold">{players.length} PLAYERS</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-accent" />
-              <span className="font-sans font-bold">BEST: {Math.max(...getPlayerScores().map(p => p.score))}</span>
-            </div>
-          </div>
-          
-          {/* Game Status */}
-          {gameStatus === 'active' && (
-            <motion.div
-              className="bg-accent/20 border-[3px] border-accent p-4 text-center mb-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <p className="font-sans text-accent font-bold">
-                Game in progress - Flip cards to find matches!
-              </p>
-            </motion.div>
-          )}
-
-          {/* Player List & Scores */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <motion.div 
-              className="lg:col-span-1"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <div className="bg-card border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4">
-                <h3 className="font-heading text-lg text-foreground mb-4">PLAYERS & SCORES</h3>
-                <div className="space-y-3">
-                  {getPlayerScores().map((player, index) => (
-                    <div key={player.id} className="flex items-center justify-between p-2 border-[2px] border-foreground bg-background">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-6 h-6 border-[2px] border-foreground flex items-center justify-center text-xs font-heading ${
-                          index === 0 ? 'bg-accent text-white' : 
-                          index === 1 ? 'bg-muted text-foreground' : 
-                          index === 2 ? 'bg-primary text-white' : 'bg-background text-foreground'
-                        }`}>
-                          {index + 1}
-                        </div>
-                        <span className={`font-sans text-sm ${
-                          player.id === currentPlayer?.id ? 'text-primary font-bold' : 'text-foreground'
-                        }`}>
-                          {player.name}
-                        </span>
-                      </div>
-                      <span className="font-heading text-foreground font-bold">{player.score}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Game Info */}
-            <motion.div 
-              className="lg:col-span-1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <div className="bg-card border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4">
-                <h3 className="font-heading text-lg text-foreground mb-4">GAME INFO</h3>
-                <div className="space-y-3 font-sans text-sm text-foreground">
-                  <div className="flex justify-between p-2 border-[2px] border-foreground bg-background">
-                    <span>Status:</span>
-                    <span className="font-heading text-primary">{gameStatus?.toUpperCase() || 'UNKNOWN'}</span>
-                  </div>
-                  <div className="flex justify-between p-2 border-[2px] border-foreground bg-background">
-                    <span>Round:</span>
-                    <span className="font-heading text-foreground">{gameState.currentRound || 1}</span>
-                  </div>
-                  <div className="flex justify-between p-2 border-[2px] border-foreground bg-background">
-                    <span>Players:</span>
-                    <span className="font-heading text-foreground">{gameState.players.length}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
