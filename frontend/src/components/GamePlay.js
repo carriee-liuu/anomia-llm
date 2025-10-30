@@ -326,8 +326,8 @@ const GamePlay = () => {
                       {player.score}
                     </div>
                      <span className="font-sans text-sm md:text-base text-foreground font-bold mt-1">
-                       {player.name}
-                     </span>
+                      {player.name}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -345,29 +345,49 @@ const GamePlay = () => {
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
-          <div className="bg-gradient-to-r from-accent via-primary to-accent border-[4px] border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] p-4 rounded-sm">
+          <div className="bg-gradient-to-br from-[oklch(0.75_0.15_60)] via-[oklch(0.65_0.2_350)] to-[oklch(0.55_0.18_310)] border-[4px] border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] p-4 rounded-sm">
             <div className="flex items-center justify-center gap-3">
               <span className="text-xs md:text-sm font-heading text-white uppercase tracking-wide">
                 Wild Card:
               </span>
-              <div className="bg-background border-[2px] border-foreground rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
+              <div className="bg-background border-[2px] border-foreground rounded-sm w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-lg md:text-xl font-bold">
                 {gameState?.currentWildCard?.wild_shapes?.[0] ? (
                   <AnomiaShape 
                     shape={gameState.currentWildCard.wild_shapes[0]} 
-                    size={24} 
-                    color="#a71b86" 
+                    size={36} 
+                    color={
+                      gameState.currentWildCard.wild_shapes[0] === 'circle' ? '#3B82F6' :
+                      gameState.currentWildCard.wild_shapes[0] === 'square' ? '#E8A54A' :
+                      gameState.currentWildCard.wild_shapes[0] === 'plus' ? '#9333EA' :
+                      gameState.currentWildCard.wild_shapes[0] === 'waves' ? '#06B6D4' :
+                      gameState.currentWildCard.wild_shapes[0] === 'diamond' ? '#FF7F50' :
+                      gameState.currentWildCard.wild_shapes[0] === 'asterisk' ? '#EF4444' :
+                      gameState.currentWildCard.wild_shapes[0] === 'dots' ? '#EC4899' :
+                      gameState.currentWildCard.wild_shapes[0] === 'equals' ? '#84CC16' :
+                      '#ffffff'
+                    }
                   />
                 ) : (
                   <span className="text-foreground">?</span>
                 )}
               </div>
               <span className="text-base md:text-lg font-heading text-white">=</span>
-              <div className="bg-background border-[2px] border-foreground rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
+              <div className="bg-background border-[2px] border-foreground rounded-sm w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-lg md:text-xl font-bold">
                 {gameState?.currentWildCard?.wild_shapes?.[1] ? (
                   <AnomiaShape 
                     shape={gameState.currentWildCard.wild_shapes[1]} 
-                    size={24} 
-                    color="#a71b86" 
+                    size={36} 
+                    color={
+                      gameState.currentWildCard.wild_shapes[1] === 'circle' ? '#3B82F6' :
+                      gameState.currentWildCard.wild_shapes[1] === 'square' ? '#E8A54A' :
+                      gameState.currentWildCard.wild_shapes[1] === 'plus' ? '#9333EA' :
+                      gameState.currentWildCard.wild_shapes[1] === 'waves' ? '#06B6D4' :
+                      gameState.currentWildCard.wild_shapes[1] === 'diamond' ? '#FF7F50' :
+                      gameState.currentWildCard.wild_shapes[1] === 'asterisk' ? '#EF4444' :
+                      gameState.currentWildCard.wild_shapes[1] === 'dots' ? '#EC4899' :
+                      gameState.currentWildCard.wild_shapes[1] === 'equals' ? '#84CC16' :
+                      '#ffffff'
+                    }
                   />
                 ) : (
                   <span className="text-foreground">?</span>
@@ -381,10 +401,10 @@ const GamePlay = () => {
       {/* Main Game Area - Card and Buttons */}
       <div className="flex flex-col items-center justify-center px-4 py-0 pb-6 min-h-[calc(100vh-200px)]">
         {/* Current Player's Card - Large and Prominent */}
-        <div className="w-full max-w-md mb-4">
+        <div className={`w-full max-w-md ${gameState?.currentWildCard ? 'mb-8' : 'mb-4'}`}>
           {getCurrentPlayerCard() ? (
             <motion.div
-              className={`border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[480px] md:h-[480px]' : 'aspect-[2/3]'} flex flex-col justify-between ${
+              className={`border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[435px] md:h-[435px]' : 'aspect-[2/3]'} flex flex-col justify-between ${
 
                 getCurrentPlayerCard().is_wild 
                   ? 'bg-gradient-to-br from-[oklch(0.75_0.15_60)] via-[oklch(0.65_0.2_350)] to-[oklch(0.55_0.18_310)] wild-card-float' 
@@ -395,19 +415,31 @@ const GamePlay = () => {
             >
               {/* Top Category Text - Upside Down */}
               <div className="text-center px-2">
-                {!getCurrentPlayerCard().is_wild && (
-                  <h4 className={`font-heading text-white mb-4 text-center transform rotate-180 break-words ${
-                    getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 15 
-                      ? 'text-xl' 
-                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 10 
-                      ? 'text-2xl' 
-                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 6
-                      ? 'text-3xl'
-                      : 'text-4xl'
-                  }`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
-                    {getCurrentPlayerCard().category}
-                  </h4>
-                )}
+                {!getCurrentPlayerCard().is_wild && (() => {
+                  const category = getCurrentPlayerCard().category;
+                  const words = category ? category.split(' ') : [];
+                  const longestWordLength = words.length > 0
+                    ? Math.max(...words.map(word => word.length))
+                    : 0;
+                  const wordCount = words.length;
+                  // For multi-word categories, use smaller font sizes
+                  const fontSize = longestWordLength > 12 
+                    ? 'text-xl' 
+                    : longestWordLength > 9 
+                    ? 'text-2xl'
+                    : longestWordLength > 7
+                    ? 'text-3xl'
+                    : wordCount >= 3 && longestWordLength <= 7
+                    ? 'text-2xl'
+                    : longestWordLength > 5
+                    ? 'text-3xl'
+                    : 'text-4xl';
+                  return (
+                    <h4 className={`font-heading text-white mb-4 text-center transform rotate-180 break-words ${fontSize}`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
+                      {category}
+                </h4>
+                  );
+                })()}
               </div>
 
               {/* Center Symbol */}
@@ -422,18 +454,38 @@ const GamePlay = () => {
                     <div className="flex-1 flex flex-col items-center justify-center gap-6">
                       {/* Wild card shapes with equals sign */}
                       <div className="flex items-center gap-4">
-                        <AnomiaShape 
-                          shape={getCurrentPlayerCard().wild_shapes?.[0]} 
-                          size={80} 
-                          color="#ffffff" 
+                    <AnomiaShape 
+                      shape={getCurrentPlayerCard().wild_shapes?.[0]} 
+                          size={110}
+                          color={
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'circle' ? '#3B82F6' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'square' ? '#E8A54A' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'plus' ? '#9333EA' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'waves' ? '#06B6D4' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'diamond' ? '#FF7F50' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'asterisk' ? '#EF4444' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'dots' ? '#EC4899' :
+                            getCurrentPlayerCard().wild_shapes?.[0] === 'equals' ? '#84CC16' :
+                            '#ffffff'
+                          }
                         />
                         <span className="text-2xl font-heading font-bold text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)]">
                           =
                         </span>
-                        <AnomiaShape 
-                          shape={getCurrentPlayerCard().wild_shapes?.[1]} 
-                          size={80} 
-                          color="#ffffff" 
+                    <AnomiaShape 
+                      shape={getCurrentPlayerCard().wild_shapes?.[1]} 
+                          size={110}
+                          color={
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'circle' ? '#3B82F6' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'square' ? '#E8A54A' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'plus' ? '#9333EA' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'waves' ? '#06B6D4' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'diamond' ? '#FF7F50' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'asterisk' ? '#EF4444' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'dots' ? '#EC4899' :
+                            getCurrentPlayerCard().wild_shapes?.[1] === 'equals' ? '#84CC16' :
+                            '#ffffff'
+                          }
                         />
                       </div>
                     </div>
@@ -446,14 +498,14 @@ const GamePlay = () => {
                 ) : (
                   <AnomiaShape 
                     shape={getCurrentPlayerCard().shape} 
-                    size={100} 
+                    size={140} 
          color={
-           getCurrentPlayerCard().shape === 'circle' ? '#22C55E' :
-           getCurrentPlayerCard().shape === 'square' ? '#F59E0B' :
+           getCurrentPlayerCard().shape === 'circle' ? '#3B82F6' :
+           getCurrentPlayerCard().shape === 'square' ? '#E8A54A' :
            getCurrentPlayerCard().shape === 'plus' ? '#9333EA' :
            getCurrentPlayerCard().shape === 'waves' ? '#06B6D4' :
-           getCurrentPlayerCard().shape === 'diamond' ? '#DC2626' :
-           getCurrentPlayerCard().shape === 'asterisk' ? '#14B8A6' :
+           getCurrentPlayerCard().shape === 'diamond' ? '#FF7F50' :
+           getCurrentPlayerCard().shape === 'asterisk' ? '#EF4444' :
            getCurrentPlayerCard().shape === 'dots' ? '#EC4899' :
            getCurrentPlayerCard().shape === 'equals' ? '#84CC16' :
            '#ffffff'
@@ -464,24 +516,36 @@ const GamePlay = () => {
 
               {/* Bottom Category Text - Right Side Up */}
               <div className="text-center px-2">
-                {!getCurrentPlayerCard().is_wild && (
-                  <h4 className={`font-heading text-white mb-4 text-center break-words ${
-                    getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 15 
-                      ? 'text-xl' 
-                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 10 
-                      ? 'text-2xl' 
-                      : getCurrentPlayerCard().category && getCurrentPlayerCard().category.length > 6
-                      ? 'text-3xl'
-                      : 'text-4xl'
-                  }`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
-                    {getCurrentPlayerCard().category}
-                  </h4>
-                )}
+                {!getCurrentPlayerCard().is_wild && (() => {
+                  const category = getCurrentPlayerCard().category;
+                  const words = category ? category.split(' ') : [];
+                  const longestWordLength = words.length > 0
+                    ? Math.max(...words.map(word => word.length))
+                    : 0;
+                  const wordCount = words.length;
+                  // For multi-word categories, use smaller font sizes
+                  const fontSize = longestWordLength > 12 
+                    ? 'text-xl' 
+                    : longestWordLength > 9 
+                    ? 'text-2xl'
+                    : longestWordLength > 7
+                    ? 'text-3xl'
+                    : wordCount >= 3 && longestWordLength <= 7
+                    ? 'text-2xl'
+                    : longestWordLength > 5
+                    ? 'text-3xl'
+                    : 'text-4xl';
+                  return (
+                    <h4 className={`font-heading text-white mb-4 text-center break-words ${fontSize}`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
+                      {category}
+                </h4>
+                  );
+                })()}
               </div>
             </motion.div>
           ) : (
             <motion.div
-              className={`bg-background border-[4px] border-dashed border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[460px]' : 'aspect-[2/3]'} flex flex-col justify-center items-center`}
+              className={`bg-background border-[4px] border-dashed border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[435px]' : 'aspect-[2/3]'} flex flex-col justify-center items-center`}
               initial={{ opacity: 0.5 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}

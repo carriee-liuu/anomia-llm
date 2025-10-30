@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import AnomiaShape from './AnomiaShape';
 
 const HomeScreen = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col items-center justify-between p-4 md:p-6 bg-background">
+    <div className="min-h-screen overflow-y-auto flex flex-col items-center justify-between p-4 md:p-6 bg-background">
       {/* Top section - Logo and tagline */}
       <motion.div 
         className="w-full max-w-md pt-4 md:pt-8"
@@ -60,7 +61,7 @@ const HomeScreen = () => {
             <h1 className="font-heading text-4.5xl md:text-7xl text-primary tracking-wider md:tracking-widest text-center">ANOMIA</h1>
           </div>
         </div>
-        <p className="font-sans text-base md:text-xl text-center font-bold tracking-wide text-foreground">
+        <p className="font-sans text-base md:text-xl text-center font-bold tracking-wide text-foreground mb-6 md:mb-10">
           Match symbols, race to name categories!
         </p>
       </motion.div>
@@ -73,13 +74,12 @@ const HomeScreen = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <div className="relative w-48 h-48 md:w-80 md:h-80">
-          {/* Card 1 - Orange/Gold */}
+          {/* Card 1 - Orange/Gold (back card with no logo) */}
           <div className="absolute top-0 left-4 md:left-8 w-32 h-44 md:w-48 md:h-64 bg-accent border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transform -rotate-12 flex items-center justify-center">
-            <div className="text-6xl md:text-9xl text-white">★</div>
           </div>
-          {/* Card 2 - Magenta/Purple */}
+          {/* Card 2 - Purple with Waves */}
           <div className="absolute top-2 md:top-4 right-4 md:right-8 w-32 h-44 md:w-48 md:h-64 bg-primary border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transform rotate-12 flex items-center justify-center">
-            <div className="text-6xl md:text-9xl text-white">●●</div>
+            <AnomiaShape shape="waves" size={80} color="#06B6D4" />
           </div>
           {/* Decorative sparkles */}
           <div className="absolute -top-2 md:-top-4 left-0 text-2xl md:text-4xl opacity-70">✦</div>
@@ -91,7 +91,7 @@ const HomeScreen = () => {
 
       {/* Bottom section - Buttons and How to Play */}
       <motion.div 
-        className="w-full max-w-md pb-4 md:pb-8 space-y-3 md:space-y-4"
+        className="w-full max-w-md pb-4 md:pb-8 pt-6 md:pt-10 space-y-3 md:space-y-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.6 }}
