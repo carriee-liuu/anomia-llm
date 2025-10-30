@@ -9,7 +9,9 @@ import {
   Trophy, 
   Clock, 
   CheckCircle,
-  RotateCcw
+  RotateCcw,
+  X,
+  Star
 } from 'lucide-react';
 import './GamePlay.css';
 
@@ -25,6 +27,8 @@ const GamePlay = () => {
     gameStatus,
     faceoff,
     resolveFaceoff,
+    exitGame,
+    startGame,
     state
   } = useGame();
   
@@ -295,6 +299,83 @@ const GamePlay = () => {
     );
   }
 
+  // Show game over screen if game is completed
+  if (gameStatus === 'completed' || gameState?.status === 'completed') {
+    const isHost = currentPlayer?.isHost;
+    const winner = gameState?.winner;
+    const finalScores = gameState?.finalScores || [];
+    
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-8">
+        <div className="max-w-2xl w-full mx-auto">
+          <div className="bg-card border-[4px] border-foreground shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] p-8 md:p-12">
+            <div className="text-center mb-8 pb-6 border-b-[3px] border-foreground">
+              <Trophy className="w-16 h-16 md:w-20 md:h-20 text-primary mx-auto mb-4" />
+              <h1 className="font-heading text-2xl md:text-4xl text-primary leading-tight">GAME OVER!</h1>
+            </div>
+            
+            {winner && (
+              <div className="mb-8">
+                <div className="text-center mb-4">
+                  <div className="bg-accent border-[3px] border-foreground px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] inline-block">
+                    <p className="font-heading text-foreground">★ WINNER ★</p>
+                  </div>
+                </div>
+                <div className="bg-accent/20 border-[3px] border-accent p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] text-center">
+                  <p className="font-heading text-2xl md:text-3xl text-accent mb-3">{winner.name}</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-heading text-accent">{winner.finalScore}</span>
+                    <span className="font-sans text-foreground/70">{winner.finalScore === 1 ? 'point' : 'points'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="mb-8">
+              <h2 className="font-heading text-xl md:text-2xl text-foreground mb-6 pb-3 border-b-[3px] border-foreground text-center">FINAL SCORES</h2>
+              <div className="space-y-3">
+                {finalScores.map((player, index) => (
+                  <div 
+                    key={player.playerId}
+                    className={`flex justify-between items-center p-4 border-[3px] ${
+                      index === 0 ? 'bg-accent/30 border-accent' : 'bg-background border-foreground'
+                    } shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {index === 0 && <Star className="w-5 h-5 text-accent fill-accent" />}
+                      <span className="font-heading text-foreground">{index + 1}.</span>
+                      <span className="font-sans text-foreground/90">{player.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-heading text-foreground">{player.finalScore}</span>
+                      <span className="font-sans text-foreground/60">{player.finalScore === 1 ? 'pt' : 'pts'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {isHost && (
+              <button
+                onClick={() => startGame()}
+                className="w-full px-8 py-4 bg-primary text-white font-heading border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] hover:bg-primary/90 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transition-all flex items-center justify-center gap-3"
+              >
+                <Play className="w-5 h-5" />
+                PLAY AGAIN
+              </button>
+            )}
+            
+            {!isHost && (
+              <p className="font-sans text-muted-foreground text-center">
+                Waiting for host to start a new game...
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Debug faceoff state
   console.log('🔍 Faceoff state check:', {
     faceoff: faceoff,
@@ -304,6 +385,15 @@ const GamePlay = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Exit Button - Top Right */}
+      <button
+        onClick={exitGame}
+        className="fixed top-4 right-4 z-50 p-2 bg-background border-[3px] border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:bg-muted hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] transition-all"
+        title="Exit Game"
+      >
+        <X className="w-5 h-5 text-foreground" />
+      </button>
+
       {/* Score Card Header - Fixed at top */}
       <motion.header 
         className={`text-center px-4 ${gameState?.currentWildCard ? 'pt-4 pb-1 mb-1' : 'py-4'}`}

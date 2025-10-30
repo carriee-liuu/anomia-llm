@@ -1,28 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   /* Retro Arcade Color System - Matching Prototype */
   --background: #f9ece2; /* Warm cream */
   --foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --card: oklch(1.0 0.0 0); /* White */
+  --font-size: 16px;
+  --card: #fef8f3; /* Slightly warmer white */
   --card-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --popover: oklch(1.0 0.0 0); /* White */
+  --popover: oklch(1 0 0); /* White */
   --popover-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
   --primary: #a71b86; /* Deep magenta */
-  --primary-foreground: oklch(1.0 0.0 0); /* White */
-  --secondary: #f9ece2; /* Warm cream */
+  --primary-foreground: oklch(1 0 0); /* White */
+  --secondary: oklch(0.95 0.0058 264.53); /* Slightly darker than background */
   --secondary-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --muted: #f9ece2; /* Warm cream */
+  --muted: #ececf0; /* Light gray */
   --muted-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
   --accent: oklch(0.7 0.15 60); /* Orange/Gold */
   --accent-foreground: oklch(1.0 0.0 0); /* White */
-  --destructive: oklch(0.6 0.15 20);
-  --destructive-foreground: oklch(0.98 0.01 280);
+  --destructive: #d4183d; /* Red */
+  --destructive-foreground: #ffffff; /* White */
   --border: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --input: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --ring: #a71b86; /* Deep magenta */
-  --radius: 0.375rem;
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0); /* Gray */
+  --radius: 0;
 }
 
 * {
@@ -31,7 +35,7 @@
 
 body {
   margin: 0;
-  font-family: 'Courier Prime', 'Courier New', monospace;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background);
@@ -40,12 +44,13 @@ body {
 
 .font-heading {
   font-family: 'Press Start 2P', 'Courier New', monospace;
-  font-weight: 400;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
 }
 
 .font-sans {
-  font-family: 'Courier Prime', 'Courier New', monospace;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: -0.005em;
+  font-weight: 400;
 }
 
 code {

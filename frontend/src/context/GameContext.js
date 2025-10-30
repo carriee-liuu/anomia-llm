@@ -1,6 +1,75 @@
 import React, { createContext, useContext, useReducer, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// LocalStorage helpers
+const STORAGE_KEY = 'anomia_game_state';
+
+const saveGameStateToStorage = (state) => {
+  try {
+    const stateToSave = {
+      roomCode: state.currentRoom?.roomCode,
+      playerId: state.currentPlayer?.id,
+      playerName: state.currentPlayer?.name,
+      gameState: state.gameState,
+      gameStatus: state.gameStatus,
+      players: state.players,
+      timestamp: Date.now()
+    };
+    
+    // Only save if we have at least a room code
+    if (stateToSave.roomCode) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      console.log('💾 Saved game state to localStorage:', stateToSave);
+    }
+  } catch (error) {
+    console.error('❌ Error saving game state to localStorage:', error);
+  }
+};
+
+const loadGameStateFromStorage = () => {
+  try {
+    // Check if user explicitly exited (don't restore)
+    const exitFlag = localStorage.getItem('anomia_exit_flag');
+    if (exitFlag === 'true') {
+      console.log('🚪 Exit flag detected, skipping restore');
+      localStorage.removeItem('anomia_exit_flag');
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      console.log('📂 Loaded game state from localStorage:', parsed);
+      
+      // Check if state is less than 24 hours old (prevent stale data)
+      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+      if (Date.now() - parsed.timestamp < maxAge) {
+        return parsed;
+      } else {
+        console.log('⏰ Saved state is too old, clearing...');
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error loading game state from localStorage:', error);
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  return null;
+};
+
+const clearGameStateFromStorage = (setExitFlag = false) => {
+  try {
+    if (setExitFlag) {
+      localStorage.setItem('anomia_exit_flag', 'true');
+    }
+    localStorage.removeItem(STORAGE_KEY);
+    console.log('🗑️ Cleared game state from localStorage', setExitFlag ? '(with exit flag)' : '');
+  } catch (error) {
+    console.error('❌ Error clearing game state from localStorage:', error);
+  }
+};
+
 // Game state reducer
 const gameReducer = (state, action) => {
   switch (action.type) {
@@ -18,8 +87,8 @@ const gameReducer = (state, action) => {
       const newStateAfterRoom = { 
         ...state, 
         currentRoom: action.payload,
-        players: action.payload.players,
-        socket: state.socket  // Preserve the socket!
+        players: action.payload?.players || [],
+        socket: state.socket  // Preserve כי socket!
       };
       console.log('✅ State after SET_ROOM:', newStateAfterRoom);
       console.log('✅ Socket preserved:', newStateAfterRoom.socket);
@@ -106,6 +175,16 @@ const gameReducer = (state, action) => {
         messages: []
       };
     
+    case 'RESTORE_STATE':
+      return {
+        ...state,
+        currentRoom: action.payload.currentRoom,
+        currentPlayer: action.payload.currentPlayer,
+        gameState: action.payload.gameState,
+        gameStatus: action.payload.gameStatus || 'waiting',
+        players: action.payload.players || []
+      };
+    
     default:
       return state;
   }
@@ -136,7 +215,74 @@ export const GameProvider = ({ children }) => {
   const [isCreatingSocket, setIsCreatingSocket] = useState(false);
   const currentSocketRef = useRef(null);
   const hasCreatedSocketRef = useRef(false);
+  const isRestoringRef = useRef(false);
+  const isExitingRef = useRef(false);
+  const currentPlayerRef = useRef(null);
+  const currentRoomRef = useRef(null);
   const navigate = useNavigate();
+
+  // Restore state from localStorage on mount
+  useEffect(() => {
+    const savedState = loadGameStateFromStorage();
+    if (savedState && savedState.roomCode && savedState.playerId && savedState.playerName) {
+      console.log('🔄 Restoring game state from localStorage...');
+      isRestoringRef.current = true;
+      
+      // Reconstruct room and player objects
+      const restoredRoom = {
+        roomCode: savedState.roomCode,
+        players: savedState.players || []
+      };
+      
+      const restoredPlayer = {
+        id: savedState.playerId,
+        name: savedState.playerName
+      };
+      
+      dispatch({
+        type: 'RESTORE_STATE',
+        payload: {
+          currentRoom: restoredRoom,
+          currentPlayer: restoredPlayer,
+          gameState: savedState.gameState,
+          gameStatus: savedState.gameStatus || 'waiting',
+          players: savedState.players || []
+        }
+      });
+      
+      // Navigate to appropriate screen
+      if (savedState.gameStatus === 'active' && savedState.gameState) {
+        navigate(`/game/${savedState.roomCode}`);
+      } else {
+        navigate(`/waiting-room/${savedState.roomCode}`);
+      }
+    }
+  }, []); // Only run on mount
+
+  // Update refs whenever state changes
+  useEffect(() => {
+    currentPlayerRef.current = state.currentPlayer;
+    currentRoomRef.current = state.currentRoom;
+  }, [state.currentPlayer, state.currentRoom]);
+
+  // Save state to localStorage whenever relevant state changes
+  useEffect(() => {
+    // Don't save during initial restoration
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
+      return;
+    }
+    
+    // Don't save if we're exiting
+    if (isExitingRef.current) {
+      return;
+    }
+    
+    // Only save if we have a room and player
+    if (state.currentRoom?.roomCode && state.currentPlayer?.id) {
+      saveGameStateToStorage(state);
+    }
+  }, [state.currentRoom?.roomCode, state.currentPlayer?.id, state.gameState, state.gameStatus, state.players]);
 
     // Initialize WebSocket connection when room is set
   useEffect(() => {
@@ -170,6 +316,19 @@ export const GameProvider = ({ children }) => {
         console.log('✅ WebSocket connected to Python backend');
         console.log('✅ WebSocket readyState:', socket.readyState);
         dispatch({ type: 'SET_LOADING', payload: false });
+        
+        // If we're restoring state, send a joinRoom message to reconnect
+        const currentPlayer = currentPlayerRef.current;
+        const currentRoom = currentRoomRef.current;
+        if (currentPlayer?.name && currentRoom?.roomCode) {
+          console.log('🔄 Reconnecting to room after restore...');
+          socket.send(JSON.stringify({
+            type: 'joinRoom',
+            playerName: currentPlayer.name,
+            roomCode: currentRoom.roomCode,
+            playerId: currentPlayer.id // Include player ID for reconnection
+          }));
+        }
       };
 
       socket.onclose = (event) => {
@@ -203,6 +362,21 @@ export const GameProvider = ({ children }) => {
             case 'playerJoined':
               console.log('🎯 playerJoined received:', message.data);
               dispatch({ type: 'SET_PLAYERS', payload: message.data.room.players });
+              break;
+              
+            case 'playerLeft':
+              console.log('🎯 playerLeft received:', message.data);
+              dispatch({ type: 'SET_PLAYERS', payload: message.data.players });
+              dispatch({ type: 'SET_ROOM', payload: message.data.room });
+              
+              // Update current player if they became host
+              const updatedPlayers = message.data.players;
+              const currentPlayerId = state.currentPlayer?.id;
+              const newHostPlayer = updatedPlayers.find(p => p.isHost);
+              if (newHostPlayer && newHostPlayer.id === currentPlayerId) {
+                console.log('👑 Current player is now the host');
+                dispatch({ type: 'SET_PLAYER', payload: newHostPlayer });
+              }
               break;
               
             case 'gameStarted':
@@ -241,6 +415,12 @@ export const GameProvider = ({ children }) => {
               
             case 'answerSubmitted':
               dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
+              break;
+              
+            case 'gameEnded':
+              console.log('🏁 Game ended:', message.data);
+              dispatch({ type: 'SET_GAME_STATE', payload: message.data.gameState });
+              dispatch({ type: 'SET_GAME_STATUS', payload: 'completed' });
               break;
               
             case 'faceoffDetected':
@@ -290,6 +470,37 @@ export const GameProvider = ({ children }) => {
     createRoom: async (hostName) => {
       try {
         console.log('🚀 createRoom called with hostName:', hostName);
+        
+        // Clear localStorage when creating a new room - always start fresh
+        // Also clear exit flag if it exists
+        localStorage.removeItem('anomia_exit_flag');
+        clearGameStateFromStorage();
+        
+        // Ensure we're starting fresh - close any existing socket
+        if (state.socket) {
+          console.log('🧹 Closing existing socket before creating room...');
+          try {
+            state.socket.onopen = null;
+            state.socket.onclose = null;
+            state.socket.onerror = null;
+            state.socket.onmessage = null;
+            if (state.socket.readyState !== WebSocket.CLOSED && state.socket.readyState !== WebSocket.CLOSING) {
+              state.socket.close();
+            }
+          } catch (error) {
+            console.error('Error closing existing socket:', error);
+          }
+          // Clear the socket refs to allow new connection
+          currentSocketRef.current = null;
+          hasCreatedSocketRef.current = false;
+          dispatch({ type: 'SET_SOCKET', payload: null });
+        }
+        
+        // Clear any existing state when creating new room
+        dispatch({ type: 'SET_ROOM', payload: null });
+        dispatch({ type: 'SET_PLAYER', payload: null });
+        dispatch({ type: 'RESET_GAME' });
+        
         dispatch({ type: 'SET_LOADING', payload: true });
         
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
@@ -330,6 +541,31 @@ export const GameProvider = ({ children }) => {
     joinRoom: async (roomCode, playerName) => {
       try {
         console.log('🚀 joinRoom called with roomCode:', roomCode, 'playerName:', playerName);
+        
+        // Clear localStorage when joining a new room - always start fresh
+        // Also clear exit flag if it exists
+        localStorage.removeItem('anomia_exit_flag');
+        clearGameStateFromStorage();
+        
+        // Ensure we're starting fresh - close any existing socket
+        if (state.socket) {
+          console.log('🧹 Closing existing socket before joining room...');
+          try {
+            state.socket.onopen = null;
+            state.socket.onclose = null;
+            state.socket.onerror = null;
+            state.socket.onmessage = null;
+            if (state.socket.readyState !== WebSocket.CLOSED && state.socket.readyState !== WebSocket.CLOSING) {
+              state.socket.close();
+            }
+          } catch (error) {
+            console.error('Error closing existing socket:', error);
+          }
+          currentSocketRef.current = null;
+          hasCreatedSocketRef.current = false;
+          dispatch({ type: 'SET_SOCKET', payload: null });
+        }
+        
         dispatch({ type: 'SET_LOADING', payload: true });
         
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
@@ -472,7 +708,76 @@ export const GameProvider = ({ children }) => {
 
     // Reset game
     resetGame: () => {
+      // Clear exit flag when resetting
+      localStorage.removeItem('anomia_exit_flag');
       dispatch({ type: 'RESET_GAME' });
+      clearGameStateFromStorage();
+    },
+
+    // Exit game - leave the room and return to home
+    exitGame: () => {
+      console.log('🚪 Exiting game...');
+      
+      // Set exit flag FIRST to prevent saving state during exit
+      isExitingRef.current = true;
+      
+      // Clear localStorage IMMEDIATELY to prevent restore on refresh
+      // Set exit flag so restore won't run on refresh
+      clearGameStateFromStorage(true);
+      
+      // Send leave message to backend if socket is connected
+      const socketToClose = state.socket;
+      if (socketToClose && socketToClose.readyState === WebSocket.OPEN && state.currentPlayer) {
+        try {
+          socketToClose.send(JSON.stringify({
+            type: 'leaveRoom',
+            playerId: state.currentPlayer.id,
+            roomCode: state.currentRoom?.roomCode
+          }));
+        } catch (error) {
+          console.error('Error sending leaveRoom message:', error);
+        }
+      }
+      
+      // Close socket connection and remove event listeners
+      if (socketToClose) {
+        try {
+          // Remove all event listeners to prevent issues
+          socketToClose.onopen = null;
+          socketToClose.onclose = null;
+          socketToClose.onerror = null;
+          socketToClose.onmessage = null;
+          
+          // Only close if not already closed
+          if (socketToClose.readyState !== WebSocket.CLOSED && socketToClose.readyState !== WebSocket.CLOSING) {
+            socketToClose.close();
+          }
+        } catch (error) {
+          console.error('Error closing socket:', error);
+        }
+      }
+      
+      // Reset socket refs FIRST - this is critical to allow new connections
+      currentSocketRef.current = null;
+      hasCreatedSocketRef.current = false;
+      currentPlayerRef.current = null;
+      currentRoomRef.current = null;
+      
+      // Reset all state - do this after clearing refs and localStorage
+      dispatch({ type: 'RESET_GAME' });
+      dispatch({ type: 'SET_ROOM', payload: null });
+      dispatch({ type: 'SET_PLAYER', payload: null });
+      dispatch({ type: 'SET_SOCKET', payload: null });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'CLEAR_ERROR' });
+      
+      // Navigate to home
+      navigate('/');
+      
+      // Reset exit flag after a short delay to allow navigation
+      setTimeout(() => {
+        isExitingRef.current = false;
+      }, 1000);
     }
   };
 

@@ -113,12 +113,16 @@ class GameService:
                     "error": "Room not found"
                 }
             
-            # Check if game is already active
+            # Check if game is already active (allow restart if game is completed)
             if room_code in self.active_games:
-                return {
-                    "success": False,
-                    "error": "Game already in progress"
-                }
+                existing_game = self.active_games[room_code]
+                if existing_game.status != GameStatus.COMPLETED:
+                    return {
+                        "success": False,
+                        "error": "Game already in progress"
+                    }
+                # Remove completed game to allow new game
+                del self.active_games[room_code]
             
             # Create game object
             game = Game(
@@ -143,7 +147,9 @@ class GameService:
                 game.add_player(player)
             
             # Generate game deck
-            game.deck = self._generate_initial_deck(len(room["players"]))
+            # Use test deck for quick testing (4 cards only)
+            game.deck = self._generate_test_deck(len(room["players"]))
+            # For production, use: game.deck = self._generate_initial_deck(len(room["players"]))
             
             # In Anomia, players start with empty decks and get cards by flipping
             # No initial card dealing - players flip cards during their turns
@@ -213,10 +219,21 @@ class GameService:
                 game.current_wild_card = player_top_card
                 logger.info(f"Wild card now active in center: {player_top_card.category}")
             
-            # Draw a new card for the player
+            # Check if deck is empty - if so, end the game
             if len(game.deck) == 0:
-                # Reshuffle deck if empty
-                game.deck = self._generate_initial_deck(len(game.players))
+                # Deck is empty - end the game
+                logger.info(f"Deck is empty - ending game for room {room_code}")
+                self.end_game(room_code)
+                
+                # Get the final game state with winner info
+                final_game_state = game.to_dict()
+                
+                return {
+                    "success": True,
+                    "gameState": final_game_state,
+                    "message": "Game over! The deck has been exhausted.",
+                    "gameEnded": True
+                }
             
             new_card = game.deck.pop(0)
             logger.info(f"🃏 Card drawn: {new_card.category} (is_wild: {new_card.is_wild}, shape: {new_card.shape})")
@@ -440,17 +457,18 @@ class GameService:
             return False
     
     def _generate_test_deck(self, player_count: int) -> List[Card]:
-        """Generate a test deck with all 8 shapes for design testing"""
+        """Generate a minimal test deck with only 4 cards for quick testing"""
         deck = []
         
-        # Create cards for each of the 8 shapes for design testing
-        all_shapes = ["circle", "square", "plus", "waves", "diamond", "asterisk", "dots", "equals"]
-        test_categories = [
-            "Circle Shape", "Square Shape", "Plus Shape", "Waves Shape", 
-            "Diamond Shape", "Asterisk Shape", "Dots Shape", "Equals Shape"
+        # Create only 4 cards for quick testing
+        test_cards = [
+            ("circle", "Circle Shape"),
+            ("square", "Square Shape"),
+            ("diamond", "Diamond Shape"),
+            ("asterisk", "Asterisk Shape"),
         ]
         
-        for shape_name, category in zip(all_shapes, test_categories):
+        for shape_name, category in test_cards:
             card = Card(
                 id=str(uuid.uuid4()),
                 shape=CardShape[shape_name.upper()],
@@ -459,17 +477,7 @@ class GameService:
             )
             deck.append(card)
         
-        # Add a wild card for testing
-        wild_card = Card(
-            id=str(uuid.uuid4()),
-            shape=CardShape.WILD,
-            category="Wild Card",
-            is_wild=True,
-            wild_shapes=[CardShape.CIRCLE, CardShape.SQUARE]
-        )
-        deck.append(wild_card)
-        
-        logger.info(f"Generated test deck with {len(deck)} cards (8 shape cards + 1 wild card)")
+        logger.info(f"Generated test deck with {len(deck)} cards (4 cards total for quick testing)")
         
         return deck
     

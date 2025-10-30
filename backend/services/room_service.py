@@ -162,12 +162,28 @@ class RoomService:
             if not room:
                 return False
             
-            # Find and remove player
+            # Find the leaving player
+            leaving_player = None
+            for p in room["players"]:
+                if p.get("socketId") == socket_id:
+                    leaving_player = p
+                    break
+            
+            # Check if leaving player is the host
+            was_host = leaving_player and leaving_player.get("isHost", False)
+            
+            # Remove the player
             room["players"] = [p for p in room["players"] if p.get("socketId") != socket_id]
             room["lastActivity"] = datetime.now().isoformat()
             
+            # If host left and there are remaining players, transfer host to first player
+            if was_host and len(room["players"]) > 0:
+                room["players"][0]["isHost"] = True
+                room["hostId"] = room["players"][0]["id"]
+                room["hostName"] = room["players"][0]["name"]
+                logger.info(f"Transferred host role to {room['players'][0]['name']} in room {room_code}")
             # If no players left, mark room for cleanup
-            if len(room["players"]) == 0:
+            elif len(room["players"]) == 0:
                 room["status"] = "abandoned"
             
             logger.info(f"Player left room {room_code}")

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
@@ -8,12 +8,17 @@ import AnomiaShape from './AnomiaShape';
 
 const HomeScreen = () => {
   const navigate = useNavigate();
-  const { createRoom, joinRoom, loading, error, clearError } = useGame();
+  const { createRoom, joinRoom, loading, error, clearError, resetGame } = useGame();
   
   const [hostName, setHostName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  // Clear game state when arriving at home screen
+  useEffect(() => {
+    resetGame();
+  }, []); // Only run on mount
 
   const handleCreateRoom = async () => {
     if (!hostName.trim()) return;

@@ -156,6 +156,9 @@ async def handle_websocket_message(socket_id: str, room_code: str, message: dict
         elif message_type == "resolveFaceoff":
             logger.info(f"🚀 Routing to handle_resolve_faceoff")
             await handle_resolve_faceoff(socket_id, room_code, message)
+        elif message_type == "leaveRoom":
+            logger.info(f"🚀 Routing to handle_leave_room")
+            await handle_leave_room(socket_id, room_code, message)
         else:
             logger.warning(f"❓ Unknown message type: {message_type}")
             
@@ -206,6 +209,36 @@ async def handle_join_room(socket_id: str, room_code: str, message: dict):
         logger.error(f"💥 Error in handle_join_room: {e}")
         await send_error(socket_id, str(e))
 
+async def handle_leave_room(socket_id: str, room_code: str, message: dict):
+    """Handle player leaving a room"""
+    try:
+        logger.info(f"🔍 handle_leave_room called with: room_code={room_code}, socket_id={socket_id}")
+        
+        # Remove player from room
+        success = room_service.leave_room(room_code, socket_id)
+        
+        if success:
+            logger.info(f"✅ Player successfully left room {room_code}")
+            
+            # Get updated room data
+            room = room_service.get_room(room_code)
+            if room:
+                # Broadcast player left message to all remaining players
+                await broadcast_to_room(room_code, {
+                    "type": "playerLeft",
+                    "data": {
+                        "room": room,
+                        "players": room["players"]
+                    }
+                })
+                logger.info(f"📢 Broadcasted playerLeft to all players in room {room_code}")
+        else:
+            logger.warning(f"⚠️ Failed to leave room {room_code} for socket {socket_id}")
+            
+    except Exception as e:
+        logger.error(f"💥 Error in handle_leave_room: {e}")
+        await send_error(socket_id, str(e))
+
 async def handle_start_game(socket_id: str, room_code: str, message: dict):
     """Handle starting a game"""
     try:
@@ -248,6 +281,15 @@ async def handle_flip_card(socket_id: str, room_code: str, message: dict):
         result = game_service.flip_card(room_code, player_id)
         
         if result["success"]:
+            # Check if game ended (deck ran out)
+            if result.get("gameEnded"):
+                logger.info(f"🏁 Game ended! Broadcasting gameEnded to room {room_code}")
+                await broadcast_to_room(room_code, {
+                    "type": "gameEnded",
+                    "data": result
+                })
+                return
+            
             # Check if a faceoff was detected and send separate message
             game_state = result.get("gameState", {})
             if game_state.get("status") == "faceoff" and game_state.get("currentFaceoff"):
@@ -327,6 +369,9 @@ async def handle_resolve_faceoff(socket_id: str, room_code: str, message: dict):
 async def handle_disconnect(socket_id: str, room_code: str):
     """Handle WebSocket disconnection"""
     try:
+        # Remove player from room using room service
+        success = room_service.leave_room(room_code, socket_id)
+        
         # Remove from active connections
         if socket_id in active_connections:
             del active_connections[socket_id]
@@ -334,6 +379,20 @@ async def handle_disconnect(socket_id: str, room_code: str):
         # Remove from room connections
         if room_code in room_connections and socket_id in room_connections[room_code]:
             room_connections[room_code].remove(socket_id)
+            
+        # If player was successfully removed from room, broadcast to others
+        if success:
+            room = room_service.get_room(room_code)
+            if room and room_connections.get(room_code):
+                # Broadcast player left message to all remaining players
+                await broadcast_to_room(room_code, {
+                    "type": "playerLeft",
+                    "data": {
+                        "room": room,
+                        "players": room["players"]
+                    }
+                })
+                logger.info(f"📢 Broadcasted playerLeft (disconnect) to all players in room {room_code}")
             
         # Clean up empty rooms
         if room_code in room_connections and not room_connections[room_code]:

@@ -5,12 +5,13 @@ import { useGame } from '../context/GameContext';
 import { 
   Users, 
   Play, 
-  Copy, 
+  ClipboardCopy, 
   Check, 
   Crown, 
   UserPlus,
   Settings,
-  MessageCircle
+  MessageCircle,
+  X
 } from 'lucide-react';
 
 const Lobby = () => {
@@ -20,7 +21,8 @@ const Lobby = () => {
     players, 
     currentPlayer, 
     startGame, 
-    messages 
+    messages,
+    exitGame
   } = useGame();
   
   // Debug logging
@@ -63,6 +65,15 @@ const Lobby = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
+      {/* Exit Button - Top Right */}
+      <button
+        onClick={exitGame}
+        className="fixed top-4 right-4 z-50 p-2 bg-background border-[3px] border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:bg-muted hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] transition-all"
+        title="Exit Lobby"
+      >
+        <X className="w-5 h-5 text-foreground" />
+      </button>
+
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.header 
@@ -88,7 +99,7 @@ const Lobby = () => {
                 onClick={copyRoomCode}
                 className="ml-3 text-primary hover:text-primary/80 transition-colors"
               >
-                {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                {copied ? <Check className="w-5 h-5" /> : <ClipboardCopy className="w-5 h-5" />}
               </button>
             </div>
             {isHost && (

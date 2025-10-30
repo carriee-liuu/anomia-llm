@@ -17,7 +17,7 @@ function App() {
   return (
     <Router>
       <GameProvider>
-        <div className="App min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+        <div className="App min-h-screen bg-background">
           <AnimatePresence mode="wait">
             <Routes>
               <Route 
