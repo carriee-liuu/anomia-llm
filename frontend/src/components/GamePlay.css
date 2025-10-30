@@ -118,6 +118,26 @@
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
+/* Retro AnomiaShape styling */
+.anomia-shape {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  filter: contrast(1.1) saturate(1.2);
+  transition: all 0.2s ease;
+}
+
+.anomia-shape:hover {
+  transform: scale(1.05);
+  filter: contrast(1.2) saturate(1.3) brightness(1.1);
+}
+
+.anomia-shape svg {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
 /* Loading spinner */
 .spinner {
   width: 40px;
@@ -184,4 +204,50 @@
   font-weight: bold;
   color: #fbbf24;
   margin-top: 1rem;
+}
+
+/* Wild card floating animation */
+.wild-card-float {
+  animation: wild-card-float 1.75s ease-in-out infinite;
+}
+
+@keyframes wild-card-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.vs {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+.faceoff-instructions {
+  margin: 1rem 0;
+  color: #d1d5db;
+}
+
+.countdown {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fbbf24;
+  margin-top: 1rem;
+}
+
+/* Wild card floating animation */
+.wild-card-float {
+  animation: wild-card-float 1.75s ease-in-out infinite;
+}
+
+@keyframes wild-card-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }

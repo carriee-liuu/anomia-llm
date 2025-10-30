@@ -3,17 +3,17 @@
 
 :root {
   /* Retro Arcade Color System - Matching Prototype */
-  --background: oklch(0.92 0.03 70); /* Cream/Beige */
+  --background: #f9ece2; /* Warm cream */
   --foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
   --card: oklch(1.0 0.0 0); /* White */
   --card-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
   --popover: oklch(1.0 0.0 0); /* White */
   --popover-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --primary: oklch(0.55 0.2 350); /* Magenta/Purple */
+  --primary: #a71b86; /* Deep magenta */
   --primary-foreground: oklch(1.0 0.0 0); /* White */
-  --secondary: oklch(0.92 0.03 70); /* Cream/Beige */
+  --secondary: #f9ece2; /* Warm cream */
   --secondary-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --muted: oklch(0.92 0.03 70); /* Cream/Beige */
+  --muted: #f9ece2; /* Warm cream */
   --muted-foreground: oklch(0.35 0.08 280); /* Navy/Dark Blue */
   --accent: oklch(0.7 0.15 60); /* Orange/Gold */
   --accent-foreground: oklch(1.0 0.0 0); /* White */
@@ -21,7 +21,7 @@
   --destructive-foreground: oklch(0.98 0.01 280);
   --border: oklch(0.35 0.08 280); /* Navy/Dark Blue */
   --input: oklch(0.35 0.08 280); /* Navy/Dark Blue */
-  --ring: oklch(0.55 0.2 350); /* Magenta/Purple */
+  --ring: #a71b86; /* Deep magenta */
   --radius: 0.375rem;
 }
 

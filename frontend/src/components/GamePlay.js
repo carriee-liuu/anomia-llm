@@ -306,7 +306,7 @@ const GamePlay = () => {
     <div className="min-h-screen bg-background">
       {/* Score Card Header - Fixed at top */}
       <motion.header 
-        className="text-center py-4 px-4"
+        className={`text-center px-4 ${gameState?.currentWildCard ? 'pt-4 pb-1 mb-1' : 'py-4'}`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -339,22 +339,22 @@ const GamePlay = () => {
       {/* Wild Card Banner - Between Scores and Card */}
       {gameState?.currentWildCard && (
         <motion.div 
-          className="w-full max-w-md mx-auto px-4 mb-4"
+          className="w-full max-w-md mx-auto px-4 mb-2"
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
-          <div className="bg-gradient-to-br from-[oklch(0.75_0.15_60)] via-[oklch(0.65_0.2_350)] to-[oklch(0.55_0.18_310)] border-[4px] border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] p-4 rounded-sm">
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-xs md:text-sm font-heading text-white uppercase tracking-wide">
+          <div className="bg-gradient-to-br from-[oklch(0.75_0.15_60/0.85)] via-[oklch(0.65_0.2_350/0.85)] to-[oklch(0.55_0.18_310/0.85)] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] py-2 px-3 rounded-sm backdrop-blur-sm">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-[10px] md:text-xs font-heading text-white uppercase tracking-wide">
                 Wild Card:
               </span>
-              <div className="bg-background border-[2px] border-foreground rounded-sm w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-lg md:text-xl font-bold">
+              <div className="bg-background/90 border-[2px] border-foreground/80 rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
                 {gameState?.currentWildCard?.wild_shapes?.[0] ? (
                   <AnomiaShape 
                     shape={gameState.currentWildCard.wild_shapes[0]} 
-                    size={36} 
+                    size={28} 
                     color={
                       gameState.currentWildCard.wild_shapes[0] === 'circle' ? '#3B82F6' :
                       gameState.currentWildCard.wild_shapes[0] === 'square' ? '#E8A54A' :
@@ -371,12 +371,12 @@ const GamePlay = () => {
                   <span className="text-foreground">?</span>
                 )}
               </div>
-              <span className="text-base md:text-lg font-heading text-white">=</span>
-              <div className="bg-background border-[2px] border-foreground rounded-sm w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-lg md:text-xl font-bold">
+              <span className="text-sm md:text-base font-heading text-white">=</span>
+              <div className="bg-background/90 border-[2px] border-foreground/80 rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
                 {gameState?.currentWildCard?.wild_shapes?.[1] ? (
                   <AnomiaShape 
                     shape={gameState.currentWildCard.wild_shapes[1]} 
-                    size={36} 
+                    size={28} 
                     color={
                       gameState.currentWildCard.wild_shapes[1] === 'circle' ? '#3B82F6' :
                       gameState.currentWildCard.wild_shapes[1] === 'square' ? '#E8A54A' :
@@ -401,10 +401,10 @@ const GamePlay = () => {
       {/* Main Game Area - Card and Buttons */}
       <div className="flex flex-col items-center justify-center px-4 py-0 pb-6 min-h-[calc(100vh-200px)]">
         {/* Current Player's Card - Large and Prominent */}
-        <div className={`w-full max-w-md ${gameState?.currentWildCard ? 'mb-8' : 'mb-4'}`}>
+        <div className="w-full max-w-md mb-4">
           {getCurrentPlayerCard() ? (
             <motion.div
-              className={`border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[435px] md:h-[435px]' : 'aspect-[2/3]'} flex flex-col justify-between ${
+              className={`border-[4px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[485px] md:h-[485px]' : 'aspect-[2/3]'} flex flex-col justify-between ${
 
                 getCurrentPlayerCard().is_wild 
                   ? 'bg-gradient-to-br from-[oklch(0.75_0.15_60)] via-[oklch(0.65_0.2_350)] to-[oklch(0.55_0.18_310)] wild-card-float' 
@@ -545,7 +545,7 @@ const GamePlay = () => {
             </motion.div>
           ) : (
             <motion.div
-              className={`bg-background border-[4px] border-dashed border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[435px]' : 'aspect-[2/3]'} flex flex-col justify-center items-center`}
+              className={`bg-background border-[4px] border-dashed border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4 mx-auto ${gameState?.currentWildCard ? 'h-[465px]' : 'aspect-[2/3]'} flex flex-col justify-center items-center`}
               initial={{ opacity: 0.5 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}

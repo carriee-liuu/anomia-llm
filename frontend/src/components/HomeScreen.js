@@ -74,7 +74,7 @@ const HomeScreen = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <div className="relative w-48 h-48 md:w-80 md:h-80">
-          {/* Card 1 - Orange/Gold (back card with no logo) */}
+          {/* Card 1 - Orange/Gold with no shape */}
           <div className="absolute top-0 left-4 md:left-8 w-32 h-44 md:w-48 md:h-64 bg-accent border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] transform -rotate-12 flex items-center justify-center">
           </div>
           {/* Card 2 - Purple with Waves */}
