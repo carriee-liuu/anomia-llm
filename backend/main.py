@@ -193,33 +193,25 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
 async def handle_websocket_message(socket_id: str, room_code: str, message: dict):
     """Handle incoming WebSocket messages"""
     try:
-        logger.info(f"📨 Received WebSocket message: {message}")
         message_type = message.get("type")
-        logger.info(f"🏷️ Message type: {message_type}")
         
         if message_type == "joinRoom":
-            logger.info(f"🚀 Routing to handle_join_room")
             await handle_join_room(socket_id, room_code, message)
         elif message_type == "startGame":
-            logger.info(f"🚀 Routing to handle_start_game")
             await handle_start_game(socket_id, room_code, message)
         elif message_type == "flipCard":
-            logger.info(f"🚀 Routing to handle_flip_card")
             await handle_flip_card(socket_id, room_code, message)
         elif message_type == "submitAnswer":
-            logger.info(f"🚀 Routing to handle_submit_answer")
             await handle_submit_answer(socket_id, room_code, message)
         elif message_type == "resolveFaceoff":
-            logger.info(f"🚀 Routing to handle_resolve_faceoff")
             await handle_resolve_faceoff(socket_id, room_code, message)
         elif message_type == "leaveRoom":
-            logger.info(f"🚀 Routing to handle_leave_room")
             await handle_leave_room(socket_id, room_code, message)
         else:
-            logger.warning(f"❓ Unknown message type: {message_type}")
+            logger.warning(f"Unknown message type: {message_type}")
             
     except Exception as e:
-        logger.error(f"💥 Error handling message: {e}")
+        logger.error(f"Error handling message: {e}")
         await send_error(socket_id, str(e))
 
 async def handle_join_room(socket_id: str, room_code: str, message: dict):
@@ -263,13 +255,11 @@ async def handle_join_room(socket_id: str, room_code: str, message: dict):
 async def handle_leave_room(socket_id: str, room_code: str, message: dict):
     """Handle player leaving a room"""
     try:
-        logger.info(f"🔍 handle_leave_room called with: room_code={room_code}, socket_id={socket_id}")
-        
         # Remove player from room
         success = room_service.leave_room(room_code, socket_id)
         
         if success:
-            logger.info(f"✅ Player successfully left room {room_code}")
+            logger.info(f"Player left room {room_code}")
             
             # Get updated room data
             room = room_service.get_room(room_code)
@@ -282,12 +272,11 @@ async def handle_leave_room(socket_id: str, room_code: str, message: dict):
                         "players": room["players"]
                     }
                 })
-                logger.info(f"📢 Broadcasted playerLeft to all players in room {room_code}")
         else:
-            logger.warning(f"⚠️ Failed to leave room {room_code} for socket {socket_id}")
+            logger.warning(f"Failed to leave room {room_code} for socket {socket_id}")
             
     except Exception as e:
-        logger.error(f"💥 Error in handle_leave_room: {e}")
+        logger.error(f"Error in handle_leave_room: {e}")
         await send_error(socket_id, str(e))
 
 async def handle_start_game(socket_id: str, room_code: str, message: dict):
