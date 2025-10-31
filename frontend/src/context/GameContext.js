@@ -126,11 +126,25 @@ const gameReducer = (state, action) => {
       console.log('🔄 SET_ROOM action:', action.payload);
       console.log('🔄 State before SET_ROOM:', state);
       console.log('🔄 Current socket in state:', state.socket);
+      const updatedPlayers = action.payload?.players || [];
+      
+      // Update currentPlayer if they became host or if their info changed
+      let updatedCurrentPlayer = state.currentPlayer;
+      if (state.currentPlayer?.id && updatedPlayers.length > 0) {
+        const playerInRoom = updatedPlayers.find(p => p.id === state.currentPlayer.id);
+        if (playerInRoom) {
+          // Update currentPlayer with latest info from room (especially isHost status)
+          updatedCurrentPlayer = { ...state.currentPlayer, ...playerInRoom };
+          console.log('👑 Updated currentPlayer with latest room data:', updatedCurrentPlayer);
+        }
+      }
+      
       const newStateAfterRoom = { 
         ...state, 
         currentRoom: action.payload,
-        players: action.payload?.players || [],
-        socket: state.socket  // Preserve כי socket!
+        players: updatedPlayers,
+        currentPlayer: updatedCurrentPlayer,
+        socket: state.socket  // Preserve socket!
       };
       console.log('✅ State after SET_ROOM:', newStateAfterRoom);
       console.log('✅ Socket preserved:', newStateAfterRoom.socket);
@@ -153,7 +167,23 @@ const gameReducer = (state, action) => {
     case 'SET_PLAYERS':
       console.log('🔄 SET_PLAYERS action:', action.payload);
       console.log('🔄 State before update:', state);
-      const newState = { ...state, players: action.payload };
+      
+      // Update currentPlayer if they became host
+      let updatedPlayer = state.currentPlayer;
+      if (state.currentPlayer?.id && action.payload && action.payload.length > 0) {
+        const playerInList = action.payload.find(p => p.id === state.currentPlayer.id);
+        if (playerInList) {
+          // Update currentPlayer with latest info (especially isHost status)
+          updatedPlayer = { ...state.currentPlayer, ...playerInList };
+          console.log('👑 Updated currentPlayer from SET_PLAYERS:', updatedPlayer);
+        }
+      }
+      
+      const newState = { 
+        ...state, 
+        players: action.payload,
+        currentPlayer: updatedPlayer
+      };
       console.log('✅ State after update:', newState);
       return newState;
     

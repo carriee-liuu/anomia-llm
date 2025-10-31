@@ -16,8 +16,11 @@ import { GameProvider } from './context/GameContext';
 import './App.css';
 
 function App() {
+  // Use basename for production (GitHub Pages), empty for local development
+  const basename = process.env.NODE_ENV === 'production' ? '/anomia-llm' : '';
+  
   return (
-    <Router basename="/anomia-llm">
+    <Router basename={basename}>
       <GameProvider>
         <div className="App min-h-screen bg-background">
           <AnimatePresence mode="wait">
