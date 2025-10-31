@@ -379,42 +379,10 @@ const GamePlay = () => {
         <X className="w-5 h-5 text-foreground" />
       </button>
 
-      {/* Score Card Header - Fixed at top */}
-      <motion.header 
-        className={`text-center px-4 ${gameState?.currentWildCard ? 'pt-4 pb-1 mb-1' : 'py-4'}`}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex justify-center mb-1">
-          <div className="bg-background border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] px-6 md:px-12 py-3 md:py-6 w-full max-w-lg">
-            <div className="text-center">
-              <h1 className="font-heading text-3xl md:text-4xl text-primary tracking-wider md:tracking-widest mb-4">
-                SCORES
-              </h1>
-              <div className="flex justify-center items-center gap-4 md:gap-6">
-                {getPlayerScores().slice(0, 3).map((player, index) => (
-                  <div key={player.id} className="flex flex-col items-center">
-                    <div className={`w-8 h-8 md:w-10 md:h-10 border-[3px] border-foreground flex items-center justify-center text-sm md:text-base font-heading text-center ${
-                      player.id === currentPlayer?.id ? 'bg-accent text-white' : 
-                      'bg-background text-foreground'
-                    }`}>
-                      {player.score}
-                    </div>
-                     <span className="font-sans text-sm md:text-base text-foreground font-bold mt-1">
-                      {player.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.header>
-
-      {/* Wild Card Banner - Between Scores and Card */}
+      {/* Wild Card Banner - At top */}
       {gameState?.currentWildCard && (
         <motion.div 
-          className="w-full max-w-md mx-auto px-4 mb-2"
+          className="w-full max-w-md mx-auto px-4 mb-2 pt-4"
           initial={{ opacity: 0, y: -20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -697,6 +665,36 @@ const GamePlay = () => {
             <RotateCcw className="w-5 h-5 inline mr-2" />
             I LOST
           </button>
+
+          {/* Score Card - Below I LOST Button */}
+          <motion.div 
+            className="w-full max-w-md text-center px-4 mt-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="bg-background border-[4px] md:border-[6px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)] px-6 md:px-12 py-3 md:py-6">
+              <div className="text-center">
+                <h1 className="font-heading text-3xl md:text-4xl text-primary tracking-wider md:tracking-widest mb-4">
+                  SCORES
+                </h1>
+                <div className="flex justify-center items-center gap-4 md:gap-6">
+                  {getPlayerScores().slice(0, 3).map((player, index) => (
+                    <div key={player.id} className="flex flex-col items-center">
+                      <div className={`w-8 h-8 md:w-10 md:h-10 border-[3px] border-foreground flex items-center justify-center text-sm md:text-base font-heading text-center ${
+                        player.id === currentPlayer?.id ? 'bg-accent text-white' : 
+                        'bg-background text-foreground'
+                      }`}>
+                        {player.score}
+                      </div>
+                       <span className="font-sans text-sm md:text-base text-foreground font-bold mt-1">
+                        {player.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
