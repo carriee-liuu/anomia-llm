@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import AnomiaShape from './AnomiaShape';
@@ -14,6 +15,7 @@ import {
 import './GamePlay.css';
 
 const GamePlay = () => {
+  const { roomCode } = useParams();
   const { 
     gameState, 
     currentPlayer, 
@@ -23,11 +25,22 @@ const GamePlay = () => {
     faceoff,
     exitGame,
     startGame,
-    state
+    state,
+    reconnectToRoom
   } = useGame();
   
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isFlipping, setIsFlipping] = useState(false);
+  const [hasAttemptedReconnect, setHasAttemptedReconnect] = useState(false);
+
+  // Attempt to reconnect when navigating directly to a game URL
+  useEffect(() => {
+    if (roomCode && !gameState && !currentPlayer && !hasAttemptedReconnect && reconnectToRoom) {
+      console.log('🔄 Detected direct URL navigation to game, attempting reconnection...');
+      setHasAttemptedReconnect(true);
+      reconnectToRoom(roomCode);
+    }
+  }, [roomCode, gameState, currentPlayer, hasAttemptedReconnect, reconnectToRoom]);
 
   // Check if it's the current player's turn
   const isMyTurn = () => {
@@ -442,7 +455,7 @@ const GamePlay = () => {
       )}
 
       {/* Main Game Area - Card and Buttons */}
-      <div className="flex flex-col items-center justify-center px-4 py-0 pb-6 min-h-[calc(100vh-200px)]">
+      <div className="flex flex-col items-center justify-center px-4 pt-6 pb-6 min-h-[calc(100vh-200px)]">
         {/* Current Player's Card - Large and Prominent */}
         <div className="w-full max-w-md mb-4">
           {getCurrentPlayerCard() ? (
@@ -668,7 +681,7 @@ const GamePlay = () => {
 
           {/* Score Card - Below I LOST Button */}
           <motion.div 
-            className="w-full max-w-md text-center px-4 mt-6"
+            className="w-full max-w-md text-center mt-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >

@@ -27,30 +27,51 @@ const saveGameStateToStorage = (state) => {
   }
 };
 
-const loadGameStateFromStorage = () => {
+const loadGameStateFromStorage = (roomCodeFilter = null) => {
   try {
-    // Check if user explicitly exited (don't restore)
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+    
+    const parsed = JSON.parse(saved);
+    
+    // If filtering by roomCode (e.g., navigating directly to a game URL)
+    // Allow restoration even if exit flag is set
+    if (roomCodeFilter) {
+      if (parsed.roomCode === roomCodeFilter) {
+        console.log('📂 Restoring state for specific room:', roomCodeFilter);
+        // Check if state is less than 24 hours old
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        if (Date.now() - parsed.timestamp < maxAge) {
+          return parsed;
+        } else {
+          console.log('⏰ Saved state is too old, clearing...');
+          localStorage.removeItem(STORAGE_KEY);
+          return null;
+        }
+      } else {
+        console.log('📂 Saved state is for a different room');
+        return null;
+      }
+    }
+    
+    // For auto-restore on home screen: check exit flag
     const exitFlag = localStorage.getItem('anomia_exit_flag');
     if (exitFlag === 'true') {
-      console.log('🚪 Exit flag detected, skipping restore');
+      console.log('🚪 Exit flag detected, skipping auto-restore');
       localStorage.removeItem('anomia_exit_flag');
-      localStorage.removeItem(STORAGE_KEY);
+      // Don't clear STORAGE_KEY - keep it for manual URL navigation
       return null;
     }
     
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      console.log('📂 Loaded game state from localStorage:', parsed);
-      
-      // Check if state is less than 24 hours old (prevent stale data)
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-      if (Date.now() - parsed.timestamp < maxAge) {
-        return parsed;
-      } else {
-        console.log('⏰ Saved state is too old, clearing...');
-        localStorage.removeItem(STORAGE_KEY);
-      }
+    console.log('📂 Loaded game state from localStorage:', parsed);
+    
+    // Check if state is less than 24 hours old (prevent stale data)
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    if (Date.now() - parsed.timestamp < maxAge) {
+      return parsed;
+    } else {
+      console.log('⏰ Saved state is too old, clearing...');
+      localStorage.removeItem(STORAGE_KEY);
     }
   } catch (error) {
     console.error('❌ Error loading game state from localStorage:', error);
@@ -59,11 +80,31 @@ const loadGameStateFromStorage = () => {
   return null;
 };
 
-const clearGameStateFromStorage = (setExitFlag = false) => {
+const clearGameStateFromStorage = (setExitFlag = false, keepSessionToken = false) => {
   try {
     if (setExitFlag) {
       localStorage.setItem('anomia_exit_flag', 'true');
     }
+    
+    // If keeping session token, preserve just the session token for reconnection
+    if (keepSessionToken) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Store minimal info: roomCode and sessionToken for future reconnection
+          localStorage.setItem('anomia_session_backup', JSON.stringify({
+            roomCode: parsed.roomCode,
+            sessionToken: parsed.sessionToken,
+            playerName: parsed.playerName,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.error('Error saving session backup:', e);
+        }
+      }
+    }
+    
     localStorage.removeItem(STORAGE_KEY);
     console.log('🗑️ Cleared game state from localStorage', setExitFlag ? '(with exit flag)' : '');
   } catch (error) {
@@ -734,9 +775,9 @@ export const GameProvider = ({ children }) => {
       // Set exit flag FIRST to prevent saving state during exit
       isExitingRef.current = true;
       
-      // Clear localStorage IMMEDIATELY to prevent restore on refresh
-      // Set exit flag so restore won't run on refresh
-      clearGameStateFromStorage(true);
+      // Clear localStorage but preserve session token for potential reconnection via URL
+      // Set exit flag so auto-restore won't run on home screen
+      clearGameStateFromStorage(true, true); // keepSessionToken=true
       
       // Send leave message to backend if socket is connected
       const socketToClose = state.socket;
@@ -791,6 +832,82 @@ export const GameProvider = ({ children }) => {
       setTimeout(() => {
         isExitingRef.current = false;
       }, 1000);
+    },
+
+    // Reconnect to a room using saved session token (for direct URL navigation)
+    reconnectToRoom: async (roomCode) => {
+      try {
+        console.log('🔄 Attempting to reconnect to room via URL:', roomCode);
+        
+        // Try to load session backup first (from exit)
+        const sessionBackup = localStorage.getItem('anomia_session_backup');
+        let sessionToken = null;
+        let playerName = null;
+        
+        if (sessionBackup) {
+          try {
+            const backup = JSON.parse(sessionBackup);
+            if (backup.roomCode === roomCode) {
+              sessionToken = backup.sessionToken;
+              playerName = backup.playerName;
+              console.log('📂 Found session backup for room:', roomCode);
+            }
+          } catch (e) {
+            console.error('Error parsing session backup:', e);
+          }
+        }
+        
+        // Also try loading from full state (if still exists)
+        const savedState = loadGameStateFromStorage(roomCode);
+        if (savedState) {
+          sessionToken = savedState.sessionToken || sessionToken;
+          playerName = savedState.playerName || playerName;
+        }
+        
+        if (!sessionToken || !playerName) {
+          console.log('❌ No session token found for room:', roomCode);
+          dispatch({ type: 'SET_ERROR', payload: 'No saved session found. Please join from the lobby.' });
+          return false;
+        }
+        
+        // Restore state so the existing socket creation logic can use it
+        const restoredRoom = {
+          roomCode: roomCode,
+          players: []
+        };
+        
+        const restoredPlayer = {
+          id: savedState?.playerId || '',
+          name: playerName,
+          sessionToken: sessionToken
+        };
+        
+        dispatch({
+          type: 'RESTORE_STATE',
+          payload: {
+            currentRoom: restoredRoom,
+            currentPlayer: restoredPlayer,
+            gameState: null,
+            gameStatus: 'waiting',
+            players: []
+          }
+        });
+        
+        // Set refs so socket creation logic can find them
+        currentPlayerRef.current = restoredPlayer;
+        currentRoomRef.current = restoredRoom;
+        
+        // The existing socket creation logic will handle the connection
+        // when it detects currentRoom and currentPlayer
+        console.log('✅ State restored, socket will be created automatically');
+        
+        return true;
+        
+      } catch (error) {
+        console.error('💥 Error reconnecting to room:', error);
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return false;
+      }
     }
   };
 
