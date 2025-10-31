@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -22,27 +22,32 @@ logger = logging.getLogger(__name__)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 allowed_origins = [
     "http://localhost:3000",  # Local development
-    "https://carriee-liuu.github.io",  # GitHub Pages production
-    "https://carriee-liuu.github.io/anomia-llm",  # GitHub Pages with path
-    FRONTEND_URL,  # From environment variable
+    "https://carriee-liuu.github.io",  # GitHub Pages production (both with and without path)
 ]
 
 # Remove duplicates while preserving order
 seen = set()
 allowed_origins = [x for x in allowed_origins if not (x in seen or seen.add(x))]
 
+# Add FRONTEND_URL if it's not already in the list
+if FRONTEND_URL not in allowed_origins:
+    allowed_origins.append(FRONTEND_URL)
+
 logger.info(f"🌐 CORS allowed origins: {allowed_origins}")
+logger.info(f"🌐 FRONTEND_URL from env: {FRONTEND_URL}")
 
 # Initialize FastAPI app
 app = FastAPI(title="Anomia LLM Backend", version="1.0.0")
 
-# Add CORS middleware
+# Add CORS middleware - MUST be added before routes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Initialize services
@@ -87,6 +92,41 @@ async def test_llm_categories(count: int = 5):
             "error": str(e),
             "fallback_categories": llm_service._generate_fallback_categories(count)
         }
+
+# Explicit OPTIONS handler for CORS preflight (backup)
+@app.options("/api/rooms")
+async def options_rooms(request: Request):
+    """Handle CORS preflight for /api/rooms"""
+    origin = request.headers.get("origin")
+    if origin in allowed_origins:
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600",
+            }
+        )
+    return JSONResponse(content={}, status_code=403)
+
+@app.options("/api/rooms/{room_code}")
+async def options_room_code(room_code: str, request: Request):
+    """Handle CORS preflight for /api/rooms/{room_code}"""
+    origin = request.headers.get("origin")
+    if origin in allowed_origins:
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600",
+            }
+        )
+    return JSONResponse(content={}, status_code=403)
 
 # API Routes
 @app.post("/api/rooms")
