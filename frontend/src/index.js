@@ -6,14 +6,15 @@ import './index.css';
 import App from './App';
 
 // Handle GitHub Pages 404.html redirect
-// The 404.html redirects with path in query string like: /anomia-llm/?/waiting-room/ABC123
-const path = window.location.pathname;
-const search = window.location.search;
-if (search.startsWith('?/')) {
-  // Extract the path from query string (spa-github-pages format)
-  const redirectPath = search.slice(2).replace(/~and~/g, '&').split('&')[0];
-  if (redirectPath) {
-    window.history.replaceState(null, '', '/anomia-llm' + redirectPath + window.location.hash);
+// The 404.html stores the path in sessionStorage and redirects to index.html
+// We then restore the path here
+const redirect = sessionStorage.redirect;
+if (redirect) {
+  delete sessionStorage.redirect;
+  const path = redirect;
+  // Only restore if it's different from current path
+  if (path !== window.location.pathname) {
+    window.history.replaceState(null, null, path);
   }
 }
 
