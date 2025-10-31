@@ -71,7 +71,7 @@ class RoomService:
                 "error": str(e)
             }
     
-    def join_room(self, room_code: str, socket_id: str, player_name: str) -> Dict[str, Any]:
+    def join_room(self, room_code: str, socket_id: str, player_name: str, player_id: Optional[str] = None) -> Dict[str, Any]:
         """Join an existing room"""
         try:
             room = self.active_rooms.get(room_code)
@@ -84,7 +84,26 @@ class RoomService:
             
             # Check if player name is already taken (including host reconnecting)
             # This check happens BEFORE status check to allow reconnection during active games
-            existing_player = next((p for p in room["players"] if p["name"] == player_name), None)
+            logger.info(f"Attempting to join: room={room_code}, player={player_name}, game_status={room.get('status')}")
+            logger.info(f"Current players in room: {[{'name': p.get('name'), 'id': p.get('id')} for p in room.get('players', [])]}")
+            
+            # Try to find existing player by ID first (if provided), then by name (case-insensitive, trimmed)
+            existing_player = None
+            if player_id:
+                # First try to match by player ID (more reliable for reconnection)
+                existing_player = next((p for p in room.get("players", []) if p.get("id") == player_id), None)
+                if existing_player:
+                    logger.info(f"Found existing player by ID: {player_id}")
+            
+            if not existing_player:
+                # Fall back to name matching (case-insensitive, trimmed)
+                player_name_normalized = player_name.strip().lower() if player_name else ""
+                for p in room.get("players", []):
+                    p_name = p.get("name", "").strip().lower() if p.get("name") else ""
+                    if p_name == player_name_normalized:
+                        existing_player = p
+                        logger.info(f"Found existing player by name: {player_name}")
+                        break
             
             if existing_player:
                 # Update existing player's socket ID (this handles reconnection even during active games)
@@ -99,6 +118,8 @@ class RoomService:
                     "player": existing_player,
                     "message": "Successfully reconnected to room"
                 }
+            
+            logger.warning(f"Player {player_name} not found in existing players. Room status: {room.get('status')}")
             
             # For NEW players, block joining if game is not waiting
             if room["status"] != "waiting":
