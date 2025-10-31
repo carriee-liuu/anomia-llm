@@ -9,6 +9,7 @@
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "ajv": "^8.17.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.546.0",
@@ -48,5 +49,10 @@
   "devDependencies": {
     "gh-pages": "^4.0.0",
     "typescript": "^4.9.5"
+  },
+  "overrides": {
+    "ajv-keywords": {
+      "ajv": "^8.17.1"
+    }
   }
 }
