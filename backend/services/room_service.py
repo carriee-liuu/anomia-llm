@@ -82,6 +82,25 @@ class RoomService:
                     "message": "Room not found"
                 }
             
+            # Check if player name is already taken (including host reconnecting)
+            # This check happens BEFORE status check to allow reconnection during active games
+            existing_player = next((p for p in room["players"] if p["name"] == player_name), None)
+            
+            if existing_player:
+                # Update existing player's socket ID (this handles reconnection even during active games)
+                existing_player["socketId"] = socket_id
+                room["lastActivity"] = datetime.now().isoformat()
+                
+                logger.info(f"Player {player_name} reconnected to room {room_code} (game status: {room['status']})")
+                
+                return {
+                    "success": True,
+                    "room": room,
+                    "player": existing_player,
+                    "message": "Successfully reconnected to room"
+                }
+            
+            # For NEW players, block joining if game is not waiting
             if room["status"] != "waiting":
                 return {
                     "success": False,
@@ -92,23 +111,6 @@ class RoomService:
                 return {
                     "success": False,
                     "message": "Room is full"
-                }
-            
-            # Check if player name is already taken (including host reconnecting)
-            existing_player = next((p for p in room["players"] if p["name"] == player_name), None)
-            
-            if existing_player:
-                # Update existing player's socket ID (this handles host reconnection)
-                existing_player["socketId"] = socket_id
-                room["lastActivity"] = datetime.now().isoformat()
-                
-                logger.info(f"Player {player_name} reconnected to room {room_code}")
-                
-                return {
-                    "success": True,
-                    "room": room,
-                    "player": existing_player,
-                    "message": "Successfully reconnected to room"
                 }
             
             # Add new player to room
