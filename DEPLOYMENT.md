@@ -2,44 +2,57 @@
 
 This guide explains how to deploy the Anomia LLM game with:
 - **Frontend**: GitHub Pages (free hosting)
-- **Backend**: Railway (free tier available)
+- **Backend**: Render (free tier available)
 
 ## 📋 Prerequisites
 
 1. **GitHub Account** with repository access
-2. **Railway Account** (free tier available)
+2. **Render Account** (free tier available at [render.com](https://render.com))
 3. **Git** installed locally
 4. **Node.js** and **Python** for local development
 
 ## 🎯 Deployment Steps
 
-### **Step 1: Deploy Backend to Railway**
+### **Step 1: Deploy Backend to Render**
 
-1. **Sign up for Railway**:
-   - Go to [railway.app](https://railway.app)
+1. **Sign up for Render**:
+   - Go to [render.com](https://render.com)
    - Sign up with GitHub account
 
-2. **Create New Project**:
-   - Click "New Project"
-   - Select "Deploy from GitHub repo"
-   - Choose your `anomia-llm` repository
-   - Select the `backend` folder as the root directory
+2. **Create New Web Service**:
+   - Click "New +" → "Web Service"
+   - Connect your GitHub account if not already connected
+   - Select your `anomia-llm` repository
+   - Render will detect `render.yaml` automatically
+   - **Important**: Make sure the root directory is set to `backend`
 
-3. **Configure Environment Variables**:
-   In Railway dashboard, go to Variables tab and add:
+3. **Configure Settings** (if render.yaml wasn't detected):
+   - **Root Directory**: `backend`
+   - **Environment**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python start.py`
+
+4. **Set Environment Variables**:
+   In Render dashboard, go to Environment tab and add:
    ```
    PORT=3001
    HOST=0.0.0.0
    DEBUG=false
+   PYTHON_VERSION=3.11
+   PYTHONUNBUFFERED=1
    FRONTEND_URL=https://carriee-liuu.github.io/anomia-llm
    OPENAI_API_KEY=your_openai_api_key_here
-   SECRET_KEY=your_secret_key_here
-   JWT_SECRET=your_jwt_secret_here
+   SECRET_KEY=your_secret_key_here  # Generate a random string
+   JWT_SECRET=your_jwt_secret_here  # Generate a random string
    ```
 
-4. **Deploy**:
-   - Railway will automatically build and deploy
-   - Note the generated URL (e.g., `https://your-app.railway.app`)
+5. **Deploy**:
+   - Click "Create Web Service"
+   - Render will automatically build and deploy
+   - Wait for deployment to complete (5-10 minutes first time)
+   - Note the generated URL (e.g., `https://anomia-llm-backend.onrender.com`)
+
+**Note**: Free tier services on Render spin down after 15 minutes of inactivity, but wake up automatically when accessed (may take 30-60 seconds to wake up).
 
 ### **Step 2: Deploy Frontend to GitHub Pages**
 
@@ -51,9 +64,11 @@ This guide explains how to deploy the Anomia LLM game with:
 2. **Set Repository Secrets**:
    In Settings > Secrets and variables > Actions, add:
    ```
-   REACT_APP_BACKEND_URL=https://your-railway-app.railway.app
-   REACT_APP_WS_URL=wss://your-railway-app.railway.app
+   REACT_APP_BACKEND_URL=https://your-render-app.onrender.com
+   REACT_APP_WS_URL=wss://your-render-app.onrender.com
    ```
+   
+   **Important**: Replace `your-render-app.onrender.com` with your actual Render service URL
 
 3. **Push to Main Branch**:
    ```bash
@@ -70,13 +85,14 @@ This guide explains how to deploy the Anomia LLM game with:
 
 ### **Step 3: Update CORS Configuration**
 
-After getting your Railway URL, update the backend CORS settings:
+After getting your Render URL, update the backend CORS settings:
 
-1. **In Railway Dashboard**:
-   - Go to Variables tab
-   - Update `FRONTEND_URL` to your GitHub Pages URL
+1. **In Render Dashboard**:
+   - Go to Environment tab
+   - Update `FRONTEND_URL` to your GitHub Pages URL: `https://carriee-liuu.github.io/anomia-llm`
+   - Save changes (will trigger a redeploy)
 
-2. **Or update code**:
+2. **Verify in code** (if needed):
    ```python
    # In backend/main.py
    allow_origins=[
@@ -101,8 +117,8 @@ After getting your Railway URL, update the backend CORS settings:
 ## 🌐 URLs After Deployment
 
 - **Frontend**: `https://carriee-liuu.github.io/anomia-llm`
-- **Backend API**: `https://your-app.railway.app`
-- **Backend Health**: `https://your-app.railway.app/health`
+- **Backend API**: `https://your-app.onrender.com`
+- **Backend Health**: `https://your-app.onrender.com/health`
 
 ## 🐛 Troubleshooting
 
@@ -112,9 +128,10 @@ After getting your Railway URL, update the backend CORS settings:
 - **Environment variables**: Ensure secrets are set correctly
 
 ### **Backend Issues**
-- **Deployment fails**: Check Railway logs
-- **Port issues**: Railway sets PORT automatically
+- **Deployment fails**: Check Render logs in the dashboard
+- **Port issues**: Render sets PORT automatically via environment variable
 - **Dependencies**: Ensure requirements.txt is complete
+- **Service sleeping**: Free tier services sleep after 15min inactivity (wake automatically)
 
 ### **Connection Issues**
 - **WebSocket not connecting**: Check WSS vs WS protocol
@@ -128,8 +145,8 @@ After getting your Railway URL, update the backend CORS settings:
 - GitHub Pages: Site availability
 
 ### **Backend**
-- Railway Dashboard: App status and logs
-- Health endpoint: `https://your-app.railway.app/health`
+- Render Dashboard: App status and logs
+- Health endpoint: `https://your-app.onrender.com/health`
 
 ## 🔄 Updates
 
@@ -138,13 +155,15 @@ To update your deployment:
 1. **Make code changes**
 2. **Commit and push to main branch**
 3. **Frontend**: Automatically deploys via GitHub Actions
-4. **Backend**: Automatically deploys via Railway
+4. **Backend**: Automatically deploys via Render (auto-deploy on git push)
 
 ## 💰 Costs
 
 - **GitHub Pages**: Free
-- **Railway**: Free tier (500 hours/month)
-- **Total**: $0/month for small projects
+- **Render**: Free tier (free web services, may sleep when inactive)
+- **Total**: $0/month (completely free!)
+
+**Note**: Render's free tier services will spin down after 15 minutes of inactivity but wake automatically when accessed (may take 30-60 seconds). For always-on hosting, consider Render's paid plans starting at $7/month.
 
 ## 🎮 Testing Your Deployment
 
