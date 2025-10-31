@@ -17,7 +17,7 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/anomia-llm">
       <GameProvider>
         <div className="App min-h-screen bg-background">
           <AnimatePresence mode="wait">
