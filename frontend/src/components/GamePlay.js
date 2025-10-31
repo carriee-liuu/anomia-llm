@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import AnomiaShape from './AnomiaShape';
 import { 
   Play, 
-  Users, 
   Trophy, 
   Clock, 
   CheckCircle,
@@ -16,17 +14,13 @@ import {
 import './GamePlay.css';
 
 const GamePlay = () => {
-  const { roomCode } = useParams();
-  const navigate = useNavigate();
   const { 
     gameState, 
-    players, 
     currentPlayer, 
     flipCard, 
     submitAnswer,
     gameStatus,
     faceoff,
-    resolveFaceoff,
     exitGame,
     startGame,
     state
@@ -34,16 +28,6 @@ const GamePlay = () => {
   
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isFlipping, setIsFlipping] = useState(false);
-  const [faceOffTimer, setFaceOffTimer] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [showAnswerInput, setShowAnswerInput] = useState(false);
-  
-  // Swipe gesture state - REMOVED (using buttons instead)
-  // const [swipeStart, setSwipeStart] = useState(null);
-  // const [swipeEnd, setSwipeEnd] = useState(null);
-  
-  const answerInputRef = useRef(null);
-  const timerRef = useRef(null);
 
   // Check if it's the current player's turn
   const isMyTurn = () => {
@@ -127,15 +111,14 @@ const GamePlay = () => {
   // const handleTouchEnd = (e, playerId) => { ... }
   // const handleCardClick = (playerId) => { ... }
 
-  // Handle answer submission
+  // Handle answer submission (currently unused - submitAnswer called directly)
+  // eslint-disable-next-line no-unused-vars
   const handleSubmitAnswer = async () => {
     if (!currentAnswer.trim()) return;
     
     try {
       await submitAnswer(currentAnswer.trim(), getFaceOffCategory());
       setCurrentAnswer('');
-      setShowAnswerInput(false);
-      setFaceOffTimer(null);
     } catch (error) {
       console.error('Failed to submit answer:', error);
     }
@@ -240,6 +223,8 @@ const GamePlay = () => {
   };
 
   // Check if current player is in a face-off
+  // Check if currently in a faceoff (currently unused)
+  // eslint-disable-next-line no-unused-vars
   const isInFaceOff = () => {
     const matches = getCurrentMatches();
     return matches.some(match => 

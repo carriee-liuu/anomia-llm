@@ -212,7 +212,6 @@ const GameContext = createContext();
 // Provider component
 export const GameProvider = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const [isCreatingSocket, setIsCreatingSocket] = useState(false);
   const currentSocketRef = useRef(null);
   const hasCreatedSocketRef = useRef(false);
   const isRestoringRef = useRef(false);
@@ -257,6 +256,7 @@ export const GameProvider = ({ children }) => {
         navigate(`/waiting-room/${savedState.roomCode}`);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
   // Update refs whenever state changes
@@ -282,6 +282,7 @@ export const GameProvider = ({ children }) => {
     if (state.currentRoom?.roomCode && state.currentPlayer?.id) {
       saveGameStateToStorage(state);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentRoom?.roomCode, state.currentPlayer?.id, state.gameState, state.gameStatus, state.players]);
 
     // Initialize WebSocket connection when room is set
@@ -463,6 +464,7 @@ export const GameProvider = ({ children }) => {
         }
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentRoom?.roomCode]); // Only run when roomCode changes
 
   // Actions

@@ -12,6 +12,7 @@ const HomeScreen = () => {
   // Clear game state when arriving at home screen
   useEffect(() => {
     resetGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
   return (
