@@ -300,7 +300,8 @@ export const GameProvider = ({ children }) => {
       hasCreatedSocketRef.current = true;
       
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
-      const wsUrl = backendUrl.replace('http', 'ws');
+      // Use REACT_APP_WS_URL if provided, otherwise derive from backend URL
+      const wsUrl = process.env.REACT_APP_WS_URL || backendUrl.replace('https://', 'wss://').replace('http://', 'ws://');
       const socket = new WebSocket(`${wsUrl}/ws/${state.currentRoom.roomCode}`);
       
       // Set socket in state
