@@ -40,7 +40,8 @@ class RoomService:
                     "name": host_name,
                     "isHost": True,
                     "joinedAt": datetime.now().isoformat(),
-                    "socketId": None  # Will be set when host connects
+                    "socketId": None,  # Will be set when host connects
+                    "sessionToken": str(uuid.uuid4())  # Unique session token for reconnection
                 }],
                 "status": "waiting",  # waiting, active, completed
                 "createdAt": datetime.now().isoformat(),
@@ -58,9 +59,12 @@ class RoomService:
             
             logger.info(f"Created room {room_code} for host {host_name}")
             
+            # Return session token for the host
+            host_player = room["players"][0]
             return {
                 "success": True,
                 "room": room,
+                "sessionToken": host_player.get("sessionToken"),  # Return token for client storage
                 "message": "Room created successfully"
             }
             
@@ -71,8 +75,18 @@ class RoomService:
                 "error": str(e)
             }
     
-    def join_room(self, room_code: str, socket_id: str, player_name: str, player_id: Optional[str] = None) -> Dict[str, Any]:
-        """Join an existing room"""
+    def join_room(self, room_code: str, socket_id: str, player_name: str, session_token: Optional[str] = None) -> Dict[str, Any]:
+        """Join an existing room
+        
+        Args:
+            room_code: The room code to join
+            socket_id: The WebSocket connection ID
+            player_name: The player's display name
+            session_token: Optional session token for reconnection (industry standard)
+        
+        Returns:
+            Dict with success status and room/player data
+        """
         try:
             room = self.active_rooms.get(room_code)
             
@@ -82,40 +96,32 @@ class RoomService:
                     "message": "Room not found"
                 }
             
-            # Check if player name is already taken (including host reconnecting)
-            # This check happens BEFORE status check to allow reconnection during active games
-            logger.info(f"Attempting to join: room={room_code}, player={player_name}, game_status={room.get('status')}")
-            logger.info(f"Current players in room: {[{'name': p.get('name'), 'id': p.get('id')} for p in room.get('players', [])]}")
-            
-            # Try to find existing player by ID first (if provided), then by name (case-insensitive, trimmed)
+            # Industry-standard approach: Match by session token first
+            # This prevents name spoofing and ensures secure reconnection
             existing_player = None
-            if player_id:
-                # First try to match by player ID (more reliable for reconnection)
-                existing_player = next((p for p in room.get("players", []) if p.get("id") == player_id), None)
-                if existing_player:
-                    logger.info(f"Found existing player by ID: {player_id}")
             
-            if not existing_player:
-                # Fall back to name matching (case-insensitive, trimmed)
-                player_name_normalized = player_name.strip().lower() if player_name else ""
-                for p in room.get("players", []):
-                    p_name = p.get("name", "").strip().lower() if p.get("name") else ""
-                    if p_name == player_name_normalized:
-                        existing_player = p
-                        logger.info(f"Found existing player by name: {player_name}")
-                        break
+            if session_token:
+                # Match by session token (most secure, industry standard)
+                existing_player = next((p for p in room.get("players", []) if p.get("sessionToken") == session_token), None)
+                if existing_player:
+                    logger.info(f"Found existing player by session token (secure reconnection)")
+                else:
+                    logger.warning(f"Session token {session_token[:8]}... not found in room (possible expired/invalid token)")
+            else:
+                logger.info(f"No session token provided - attempting new join")
             
             if existing_player:
                 # Update existing player's socket ID (this handles reconnection even during active games)
                 existing_player["socketId"] = socket_id
                 room["lastActivity"] = datetime.now().isoformat()
                 
-                logger.info(f"Player {player_name} reconnected to room {room_code} (game status: {room['status']})")
+                logger.info(f"Player {existing_player.get('name')} reconnected to room {room_code} (game status: {room['status']})")
                 
                 return {
                     "success": True,
                     "room": room,
                     "player": existing_player,
+                    "sessionToken": existing_player.get("sessionToken"),  # Return token for client storage
                     "message": "Successfully reconnected to room"
                 }
             
@@ -134,13 +140,15 @@ class RoomService:
                     "message": "Room is full"
                 }
             
-            # Add new player to room
+            # Add new player to room with a unique session token
+            session_token = str(uuid.uuid4())
             new_player = {
                 "id": str(uuid.uuid4()),
                 "name": player_name,
                 "isHost": False,
                 "joinedAt": datetime.now().isoformat(),
-                "socketId": socket_id
+                "socketId": socket_id,
+                "sessionToken": session_token  # Unique token for future reconnections
             }
             
             room["players"].append(new_player)
@@ -149,12 +157,13 @@ class RoomService:
             # Update room
             self.active_rooms[room_code] = room
             
-            logger.info(f"Player {player_name} joined room {room_code}")
+            logger.info(f"Player {player_name} joined room {room_code} with session token")
             
             return {
                 "success": True,
                 "room": room,
                 "player": new_player,
+                "sessionToken": session_token,  # Return token for client to store
                 "message": "Successfully joined room"
             }
             

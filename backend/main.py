@@ -218,13 +218,13 @@ async def handle_join_room(socket_id: str, room_code: str, message: dict):
     """Handle player joining a room"""
     try:
         player_name = message.get("playerName")
-        player_id = message.get("playerId")  # Optional: for reconnection
+        session_token = message.get("sessionToken")  # Industry-standard session token for reconnection
         if not player_name:
             await send_error(socket_id, "playerName is required")
             return
         
-        # Pass player_id to help with reconnection matching
-        result = room_service.join_room(room_code, socket_id, player_name, player_id=player_id)
+        # Pass session_token for secure reconnection (industry standard)
+        result = room_service.join_room(room_code, socket_id, player_name, session_token=session_token)
         
         if result["success"]:
             logger.info(f"Player {player_name} joined/reconnected to room {room_code}")

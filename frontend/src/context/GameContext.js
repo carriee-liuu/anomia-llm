@@ -10,6 +10,7 @@ const saveGameStateToStorage = (state) => {
       roomCode: state.currentRoom?.roomCode,
       playerId: state.currentPlayer?.id,
       playerName: state.currentPlayer?.name,
+      sessionToken: state.currentPlayer?.sessionToken,  // Industry-standard session token
       gameState: state.gameState,
       gameStatus: state.gameStatus,
       players: state.players,
@@ -235,7 +236,8 @@ export const GameProvider = ({ children }) => {
       
       const restoredPlayer = {
         id: savedState.playerId,
-        name: savedState.playerName
+        name: savedState.playerName,
+        sessionToken: savedState.sessionToken  // Include session token for secure reconnection
       };
       
       dispatch({
@@ -319,16 +321,16 @@ export const GameProvider = ({ children }) => {
         console.log('✅ WebSocket readyState:', socket.readyState);
         dispatch({ type: 'SET_LOADING', payload: false });
         
-        // If we're restoring state, send a joinRoom message to reconnect
+        // If we're restoring state, send a joinRoom message to reconnect using session token
         const currentPlayer = currentPlayerRef.current;
         const currentRoom = currentRoomRef.current;
         if (currentPlayer?.name && currentRoom?.roomCode) {
-          console.log('🔄 Reconnecting to room after restore...');
+          console.log('🔄 Reconnecting to room after restore using session token...');
           socket.send(JSON.stringify({
             type: 'joinRoom',
             playerName: currentPlayer.name,
             roomCode: currentRoom.roomCode,
-            playerId: currentPlayer.id // Include player ID for reconnection
+            sessionToken: currentPlayer.sessionToken  // Industry-standard session token for secure reconnection
           }));
         }
       };
@@ -354,10 +356,14 @@ export const GameProvider = ({ children }) => {
             case 'roomJoined':
               console.log('🎯 roomJoined received:', message.data);
               dispatch({ type: 'SET_ROOM', payload: message.data.room });
-              // Set the current player with the proper backend-assigned ID
+              // Set the current player with the proper backend-assigned ID and session token
               if (message.data.player) {
-                console.log('✅ Setting current player from roomJoined:', message.data.player);
-                dispatch({ type: 'SET_PLAYER', payload: message.data.player });
+                // Include session token if provided (for new joins and reconnections)
+                const playerWithToken = message.data.sessionToken 
+                  ? { ...message.data.player, sessionToken: message.data.sessionToken }
+                  : message.data.player;
+                console.log('✅ Setting current player from roomJoined:', playerWithToken);
+                dispatch({ type: 'SET_PLAYER', payload: playerWithToken });
               }
               break;
               
@@ -525,7 +531,11 @@ export const GameProvider = ({ children }) => {
           console.log('✅ Room created successfully, dispatching SET_ROOM');
           dispatch({ type: 'SET_ROOM', payload: data.room });
           console.log('✅ Dispatching SET_PLAYER');
-          dispatch({ type: 'SET_PLAYER', payload: data.room.players[0] });
+          // Include session token if provided
+          const hostPlayer = data.sessionToken 
+            ? { ...data.room.players[0], sessionToken: data.sessionToken }
+            : data.room.players[0];
+          dispatch({ type: 'SET_PLAYER', payload: hostPlayer });
           dispatch({ type: 'SET_LOADING', payload: false });
           return data;
         } else {
