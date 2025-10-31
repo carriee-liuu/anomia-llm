@@ -474,22 +474,35 @@ const GamePlay = () => {
                 {!getCurrentPlayerCard().is_wild && (() => {
                   const category = getCurrentPlayerCard().category;
                   const words = category ? category.split(' ') : [];
+                  const totalChars = category ? category.length : 0;
                   const longestWordLength = words.length > 0
                     ? Math.max(...words.map(word => word.length))
                     : 0;
                   const wordCount = words.length;
-                  // For multi-word categories, use smaller font sizes
-                  const fontSize = longestWordLength > 12 
-                    ? 'text-xl' 
-                    : longestWordLength > 9 
-                    ? 'text-2xl'
-                    : longestWordLength > 7
-                    ? 'text-3xl'
-                    : wordCount >= 3 && longestWordLength <= 7
-                    ? 'text-2xl'
-                    : longestWordLength > 5
-                    ? 'text-3xl'
-                    : 'text-4xl';
+                  // Font sizing based on total character count and word count (not just longest word)
+                  let fontSize;
+                  if (totalChars > 30 || wordCount >= 5) {
+                    // Very long phrases: use smallest
+                    fontSize = 'text-lg';
+                  } else if (totalChars > 25 || wordCount >= 4) {
+                    // Long phrases: use small
+                    fontSize = 'text-xl';
+                  } else if (totalChars > 20 || (wordCount >= 3 && longestWordLength > 8)) {
+                    // Medium-long phrases: use medium-small
+                    fontSize = 'text-2xl';
+                  } else if (totalChars > 15 || wordCount >= 3 || longestWordLength > 10) {
+                    // Medium phrases: use medium
+                    fontSize = 'text-2xl';
+                  } else if (longestWordLength > 8) {
+                    // Single long word or two-word phrase with long word
+                    fontSize = 'text-3xl';
+                  } else if (longestWordLength > 5 || wordCount >= 2) {
+                    // Short-medium words or multi-word
+                    fontSize = 'text-3xl';
+                  } else {
+                    // Short single words
+                    fontSize = 'text-4xl';
+                  }
                   return (
                     <h4 className={`font-heading text-white mb-4 text-center transform rotate-180 break-words ${fontSize}`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
                       {category}
@@ -575,22 +588,35 @@ const GamePlay = () => {
                 {!getCurrentPlayerCard().is_wild && (() => {
                   const category = getCurrentPlayerCard().category;
                   const words = category ? category.split(' ') : [];
+                  const totalChars = category ? category.length : 0;
                   const longestWordLength = words.length > 0
                     ? Math.max(...words.map(word => word.length))
                     : 0;
                   const wordCount = words.length;
-                  // For multi-word categories, use smaller font sizes
-                  const fontSize = longestWordLength > 12 
-                    ? 'text-xl' 
-                    : longestWordLength > 9 
-                    ? 'text-2xl'
-                    : longestWordLength > 7
-                    ? 'text-3xl'
-                    : wordCount >= 3 && longestWordLength <= 7
-                    ? 'text-2xl'
-                    : longestWordLength > 5
-                    ? 'text-3xl'
-                    : 'text-4xl';
+                  // Font sizing based on total character count and word count (not just longest word)
+                  let fontSize;
+                  if (totalChars > 30 || wordCount >= 5) {
+                    // Very long phrases: use smallest
+                    fontSize = 'text-lg';
+                  } else if (totalChars > 25 || wordCount >= 4) {
+                    // Long phrases: use small
+                    fontSize = 'text-xl';
+                  } else if (totalChars > 20 || (wordCount >= 3 && longestWordLength > 8)) {
+                    // Medium-long phrases: use medium-small
+                    fontSize = 'text-2xl';
+                  } else if (totalChars > 15 || wordCount >= 3 || longestWordLength > 10) {
+                    // Medium phrases: use medium
+                    fontSize = 'text-2xl';
+                  } else if (longestWordLength > 8) {
+                    // Single long word or two-word phrase with long word
+                    fontSize = 'text-3xl';
+                  } else if (longestWordLength > 5 || wordCount >= 2) {
+                    // Short-medium words or multi-word
+                    fontSize = 'text-3xl';
+                  } else {
+                    // Short single words
+                    fontSize = 'text-4xl';
+                  }
                   return (
                     <h4 className={`font-heading text-white mb-4 text-center break-words ${fontSize}`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.5)' }}>
                       {category}

@@ -383,3 +383,4 @@ Button:
 - **Bold Borders**: Thick borders (3-4px) for definition
 - **Responsive**: Mobile-first design with desktop enhancements
 
+

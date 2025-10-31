@@ -603,3 +603,4 @@ z-50
 
 8. **Responsive Shape Sizes**: Banner shapes are smaller (28px) than main card shapes (110px for wild, 140px for regular) to maintain hierarchy.
 
+

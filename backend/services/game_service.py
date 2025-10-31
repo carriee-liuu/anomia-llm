@@ -505,6 +505,14 @@ class GameService:
             # No LLM service available, use fallback
             all_categories = self._get_fallback_categories(total_categories_needed)
         
+        # Log the final categories that will be used in the deck (after deduplication)
+        logger.info("=" * 80)
+        logger.info(f"🎴 FINAL DECK CATEGORIES (after deduplication) - {len(all_categories)} categories:")
+        logger.info("=" * 80)
+        for i, category in enumerate(all_categories, 1):
+            logger.info(f"  {i:3d}. {category}")
+        logger.info("=" * 80)
+        
         # Generate the requested number of decks
         for deck_num in range(num_decks):
             # Distribute categories across shapes for this deck

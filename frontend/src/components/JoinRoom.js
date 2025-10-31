@@ -30,7 +30,7 @@ const JoinRoom = () => {
     return '';
   };
   
-  const [roomCode, setRoomCode] = useState(roomCodeFromUrl);
+  const [roomCode, setRoomCode] = useState(roomCodeFromUrl ? roomCodeFromUrl.toUpperCase() : '');
   const [playerName, setPlayerName] = useState(getSavedPlayerName(roomCodeFromUrl));
   
   // Update roomCode and player name when URL param changes
@@ -38,11 +38,14 @@ const JoinRoom = () => {
     if (roomCodeFromUrl) {
       const upperRoomCode = roomCodeFromUrl.toUpperCase();
       setRoomCode(upperRoomCode);
+      console.log('🔗 URL roomCode param detected:', upperRoomCode);
       // Pre-fill player name if they were in this room before
       const savedName = getSavedPlayerName(upperRoomCode);
       if (savedName) {
         setPlayerName(savedName);
       }
+    } else {
+      console.log('⚠️ No roomCode param in URL');
     }
   }, [roomCodeFromUrl]);
 

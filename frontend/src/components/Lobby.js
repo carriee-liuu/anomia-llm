@@ -53,8 +53,12 @@ const Lobby = () => {
   // Generate join URL (works for both local dev and production)
   const getJoinUrl = () => {
     const baseUrl = window.location.origin;
-    const basename = process.env.NODE_ENV === 'production' ? '/anomia-llm' : '';
-    return `${baseUrl}${basename}/join?roomCode=${currentRoomCode}`;
+    // Detect production by checking if pathname starts with /anomia-llm
+    const isProduction = window.location.pathname.startsWith('/anomia-llm');
+    const basename = isProduction ? '/anomia-llm' : '';
+    const joinUrl = `${baseUrl}${basename}/join?roomCode=${currentRoomCode}`;
+    console.log('📱 QR Code URL generated:', joinUrl, '(production:', isProduction, ')');
+    return joinUrl;
   };
 
   // Copy room code to clipboard
