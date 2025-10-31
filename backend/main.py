@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import json
 import logging
+import os
 from typing import Dict, List, Optional
 import uuid
 from datetime import datetime
@@ -17,13 +18,28 @@ from models.game_models import GameStatus
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Get allowed origins from environment or use defaults
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "https://carriee-liuu.github.io",  # GitHub Pages production
+    "https://carriee-liuu.github.io/anomia-llm",  # GitHub Pages with path
+    FRONTEND_URL,  # From environment variable
+]
+
+# Remove duplicates while preserving order
+seen = set()
+allowed_origins = [x for x in allowed_origins if not (x in seen or seen.add(x))]
+
+logger.info(f"🌐 CORS allowed origins: {allowed_origins}")
+
 # Initialize FastAPI app
 app = FastAPI(title="Anomia LLM Backend", version="1.0.0")
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
