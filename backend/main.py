@@ -225,44 +225,39 @@ async def handle_websocket_message(socket_id: str, room_code: str, message: dict
 async def handle_join_room(socket_id: str, room_code: str, message: dict):
     """Handle player joining a room"""
     try:
-        logger.info(f"🔍 handle_join_room called with: room_code={room_code}, socket_id={socket_id}, message={message}")
-        
         player_name = message.get("playerName")
         if not player_name:
-            logger.warning(f"❌ playerName missing from message: {message}")
             await send_error(socket_id, "playerName is required")
             return
         
-        logger.info(f"🎯 Attempting to join player '{player_name}' to room '{room_code}'")
-        
         result = room_service.join_room(room_code, socket_id, player_name)
-        logger.info(f"📦 RoomService.join_room result: {result}")
         
         if result["success"]:
-            logger.info(f"✅ Player {player_name} successfully joined room {room_code}")
-            logger.info(f"📊 Room now has {len(result['room']['players'])} players")
+            logger.info(f"Player {player_name} joined/reconnected to room {room_code}")
+            
+            # Ensure socket is in room_connections
+            if room_code not in room_connections:
+                room_connections[room_code] = []
+            if socket_id not in room_connections[room_code]:
+                room_connections[room_code].append(socket_id)
             
             # Send confirmation to the joining player
             await send_message(socket_id, {
                 "type": "roomJoined",
                 "data": result
             })
-            logger.info(f"📤 Sent roomJoined message to socket {socket_id}")
             
             # Notify all players in the room
             await broadcast_to_room(room_code, {
                 "type": "playerJoined",
                 "data": result
             })
-            logger.info(f"📢 Broadcasted playerJoined to all players in room {room_code}")
-            
-            logger.info(f"🎉 Player {player_name} joined room {room_code} - COMPLETE")
         else:
-            logger.error(f"❌ Failed to join room: {result['message']}")
+            logger.warning(f"Failed to join room: {result['message']}")
             await send_error(socket_id, result["message"])
             
     except Exception as e:
-        logger.error(f"💥 Error in handle_join_room: {e}")
+        logger.error(f"Error in handle_join_room: {e}")
         await send_error(socket_id, str(e))
 
 async def handle_leave_room(socket_id: str, room_code: str, message: dict):
@@ -311,14 +306,11 @@ async def handle_start_game(socket_id: str, room_code: str, message: dict):
         
         if result["success"]:
             # Broadcast game started to all players in the room
-            logger.info(f"📢 Broadcasting gameStarted to room {room_code}")
             await broadcast_to_room(room_code, {
                 "type": "gameStarted",
                 "data": result
             })
-            logger.info(f"✅ Broadcast sent successfully for room {room_code}")
-            
-            logger.info(f"Game started successfully for room {room_code}")
+            logger.info(f"Game started for room {room_code}")
         else:
             await send_error(socket_id, result["error"])
             
@@ -339,7 +331,7 @@ async def handle_flip_card(socket_id: str, room_code: str, message: dict):
         if result["success"]:
             # Check if game ended (deck ran out)
             if result.get("gameEnded"):
-                logger.info(f"🏁 Game ended! Broadcasting gameEnded to room {room_code}")
+                logger.info(f"Game ended for room {room_code}")
                 await broadcast_to_room(room_code, {
                     "type": "gameEnded",
                     "data": result
@@ -349,7 +341,6 @@ async def handle_flip_card(socket_id: str, room_code: str, message: dict):
             # Check if a faceoff was detected and send separate message
             game_state = result.get("gameState", {})
             if game_state.get("status") == "faceoff" and game_state.get("currentFaceoff"):
-                logger.info(f"⚡ Faceoff detected! Broadcasting faceoffDetected message to room {room_code}")
                 await broadcast_to_room(room_code, {
                     "type": "faceoffDetected",
                     "data": {
@@ -357,16 +348,12 @@ async def handle_flip_card(socket_id: str, room_code: str, message: dict):
                         "gameState": game_state
                     }
                 })
-                logger.info(f"✅ faceoffDetected message broadcasted successfully")
             
             # Always broadcast the updated game state
-            logger.info(f"📢 Broadcasting cardFlipped message to room {room_code}")
-            logger.info(f"📢 Message data: {result}")
             await broadcast_to_room(room_code, {
                 "type": "cardFlipped",
                 "data": result
             })
-            logger.info(f"✅ cardFlipped message broadcasted successfully")
         else:
             await send_error(socket_id, result["error"])
             
@@ -425,37 +412,40 @@ async def handle_resolve_faceoff(socket_id: str, room_code: str, message: dict):
 async def handle_disconnect(socket_id: str, room_code: str):
     """Handle WebSocket disconnection"""
     try:
-        # Remove player from room using room service
-        success = room_service.leave_room(room_code, socket_id)
+        # Get room to check game status
+        room = room_service.get_room(room_code)
         
         # Remove from active connections
         if socket_id in active_connections:
             del active_connections[socket_id]
         
-        # Remove from room connections
+        # Remove from room connections (but keep player in room for reconnection)
         if room_code in room_connections and socket_id in room_connections[room_code]:
             room_connections[room_code].remove(socket_id)
-            
-        # If player was successfully removed from room, broadcast to others
-        if success:
-            room = room_service.get_room(room_code)
-            if room and room_connections.get(room_code):
+        
+        # Only remove player from room if game is not active (allows reconnection during game)
+        if room and room.get("status") == "waiting":
+            # Remove player from room only if in lobby
+            success = room_service.leave_room(room_code, socket_id)
+            if success and room_connections.get(room_code):
                 # Broadcast player left message to all remaining players
-                await broadcast_to_room(room_code, {
-                    "type": "playerLeft",
-                    "data": {
-                        "room": room,
-                        "players": room["players"]
-                    }
-                })
-                logger.info(f"📢 Broadcasted playerLeft (disconnect) to all players in room {room_code}")
+                updated_room = room_service.get_room(room_code)
+                if updated_room:
+                    await broadcast_to_room(room_code, {
+                        "type": "playerLeft",
+                        "data": {
+                            "room": updated_room,
+                            "players": updated_room["players"]
+                        }
+                    })
+        else:
+            # During active game, just mark socket as disconnected (player can reconnect)
+            logger.info(f"Player disconnected during active game in room {room_code}, allowing reconnection")
             
         # Clean up empty rooms
         if room_code in room_connections and not room_connections[room_code]:
             del room_connections[room_code]
             
-        logger.info(f"Cleaned up connection {socket_id} from room {room_code}")
-        
     except Exception as e:
         logger.error(f"Error handling disconnect: {e}")
 
@@ -464,8 +454,13 @@ async def send_message(socket_id: str, message: dict):
     try:
         if socket_id in active_connections:
             await active_connections[socket_id].send_text(json.dumps(message))
+        else:
+            logger.debug(f"Socket {socket_id} not in active_connections, message not sent")
     except Exception as e:
-        logger.error(f"Error sending message to {socket_id}: {e}")
+        logger.warning(f"Error sending message to {socket_id}: {e}")
+        # Remove from active connections if send fails
+        if socket_id in active_connections:
+            del active_connections[socket_id]
 
 async def send_error(socket_id: str, error_message: str):
     """Send an error message to a specific WebSocket connection"""
@@ -476,18 +471,20 @@ async def send_error(socket_id: str, error_message: str):
 
 async def broadcast_to_room(room_code: str, message: dict):
     """Broadcast a message to all players in a room"""
-    logger.info(f"📢 broadcast_to_room called for room {room_code}")
-    logger.info(f"📢 room_connections keys: {list(room_connections.keys())}")
-    logger.info(f"📢 room_connections[{room_code}]: {room_connections.get(room_code, 'NOT FOUND')}")
-    
     if room_code in room_connections:
-        logger.info(f"📢 Broadcasting to {len(room_connections[room_code])} connections")
+        disconnected_sockets = []
         for socket_id in room_connections[room_code]:
-            logger.info(f"📢 Sending message to socket {socket_id}")
-            await send_message(socket_id, message)
-        logger.info(f"✅ Broadcast completed for room {room_code}")
-    else:
-        logger.warning(f"⚠️ Room {room_code} not found in room_connections")
+            try:
+                await send_message(socket_id, message)
+            except Exception as e:
+                logger.warning(f"Failed to send message to socket {socket_id}: {e}")
+                disconnected_sockets.append(socket_id)
+        
+        # Remove disconnected sockets from room_connections
+        for socket_id in disconnected_sockets:
+            if room_code in room_connections:
+                room_connections[room_code] = [s for s in room_connections[room_code] if s != socket_id]
+                logger.info(f"Removed disconnected socket {socket_id} from room {room_code}")
 
 if __name__ == "__main__":
     uvicorn.run(
