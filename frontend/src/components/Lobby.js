@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   Users, 
   Play, 
@@ -11,7 +12,8 @@ import {
   UserPlus,
   Settings,
   MessageCircle,
-  X
+  X,
+  QrCode
 } from 'lucide-react';
 
 const Lobby = () => {
@@ -26,16 +28,39 @@ const Lobby = () => {
   } = useGame();
   
   const [copied, setCopied] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [gameSettings, setGameSettings] = useState({
     difficulty: 'medium'
   });
 
+  // Get the current room code string
+  const currentRoomCode = typeof roomCode === 'string' ? roomCode : roomCode?.roomCode || '';
+  
+  // Redirect to join page if user hasn't joined the room yet
+  React.useEffect(() => {
+    if (currentRoomCode && !currentPlayer) {
+      console.log('📍 No current player found, redirecting to join page');
+      navigate(`/join?roomCode=${currentRoomCode}`, { replace: true });
+    }
+  }, [currentRoomCode, currentPlayer, navigate]);
+  
+  // Don't render lobby if no current player (will redirect)
+  if (!currentPlayer && currentRoomCode) {
+    return null; // or a loading state
+  }
+  
+  // Generate join URL (works for both local dev and production)
+  const getJoinUrl = () => {
+    const baseUrl = window.location.origin;
+    const basename = process.env.NODE_ENV === 'production' ? '/anomia-llm' : '';
+    return `${baseUrl}${basename}/join?roomCode=${currentRoomCode}`;
+  };
+
   // Copy room code to clipboard
   const copyRoomCode = async () => {
     try {
-      const codeToCopy = typeof roomCode === 'string' ? roomCode : JSON.stringify(roomCode);
-      await navigator.clipboard.writeText(codeToCopy);
+      await navigator.clipboard.writeText(currentRoomCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -97,19 +122,52 @@ const Lobby = () => {
             </div>
           </div>
           
+          {/* QR Code - Only shows when showQRCode is true */}
+          {showQRCode && currentRoomCode && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="flex justify-center mb-4"
+            >
+              <div className="bg-background border-[3px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] p-4">
+                <QRCodeSVG 
+                  value={getJoinUrl()}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+                <p className="font-sans text-xs text-muted-foreground text-center mt-2">
+                  Scan to join
+                </p>
+              </div>
+            </motion.div>
+          )}
+          
           {/* Room Code and Settings */}
           <div className="flex items-center justify-start gap-2">
             <div className="bg-card border-[3px] border-foreground shadow-[6px_6px_0px_0px_rgba(0,0,0,0.3)] px-4 md:px-5 py-2 flex items-center gap-4 flex-1 h-[51px]">
               <span className="font-sans text-sm text-foreground">ROOM CODE:</span>
               <span className="font-sans text-xl font-bold text-foreground">
-                {typeof roomCode === 'string' ? roomCode : roomCode?.roomCode || 'Loading...'}
+                {currentRoomCode || 'Loading...'}
               </span>
               <button
                 onClick={copyRoomCode}
                 className="text-primary hover:text-primary/80 transition-colors"
+                title="Copy room code"
               >
                 {copied ? <Check className="w-5 h-5" /> : <ClipboardCopy className="w-5 h-5" />}
               </button>
+              {currentRoomCode && (
+                <button
+                  onClick={() => setShowQRCode(!showQRCode)}
+                  className={`transition-colors ${showQRCode ? 'text-primary' : 'text-primary hover:text-primary/80'}`}
+                  title={showQRCode ? 'Hide QR code' : 'Show QR code'}
+                >
+                  <QrCode className="w-5 h-5" />
+                </button>
+              )}
             </div>
             {/* Settings Button - Inline with Room Code (only for host) */}
             {isHost && (

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // LocalStorage helpers
 const STORAGE_KEY = 'anomia_game_state';
@@ -291,42 +291,58 @@ export const GameProvider = ({ children }) => {
   const currentPlayerRef = useRef(null);
   const currentRoomRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Restore state from localStorage on mount
+  // Only restore if we're on a game/lobby route, NOT on /join or /create routes
   useEffect(() => {
-    const savedState = loadGameStateFromStorage();
-    if (savedState && savedState.roomCode && savedState.playerId && savedState.playerName) {
-      console.log('🔄 Restoring game state from localStorage...');
-      isRestoringRef.current = true;
+    const currentPath = location.pathname;
+    
+    // Don't auto-restore on these routes - let user explicitly join/create
+    if (currentPath.includes('/join') || currentPath.includes('/create') || currentPath === '/') {
+      console.log('📍 On join/create/home page - skipping auto-restore');
+      return;
+    }
+    
+    // Check if we're on a game or lobby route
+    const isGameRoute = currentPath.includes('/game/') || currentPath.includes('/waiting-room/') || currentPath.includes('/lobby/');
+    
+    if (isGameRoute) {
+      // Extract roomCode from URL
+      const urlRoomCode = currentPath.split('/').pop();
       
-      // Reconstruct room and player objects
-      const restoredRoom = {
-        roomCode: savedState.roomCode,
-        players: savedState.players || []
-      };
-      
-      const restoredPlayer = {
-        id: savedState.playerId,
-        name: savedState.playerName,
-        sessionToken: savedState.sessionToken  // Include session token for secure reconnection
-      };
-      
-      dispatch({
-        type: 'RESTORE_STATE',
-        payload: {
-          currentRoom: restoredRoom,
-          currentPlayer: restoredPlayer,
-          gameState: savedState.gameState,
-          gameStatus: savedState.gameStatus || 'waiting',
+      // Only restore if the saved roomCode matches the URL roomCode
+      const savedState = loadGameStateFromStorage(urlRoomCode);
+      if (savedState && savedState.roomCode === urlRoomCode && savedState.playerId && savedState.playerName) {
+        console.log('🔄 Restoring game state from localStorage for room:', urlRoomCode);
+        isRestoringRef.current = true;
+        
+        // Reconstruct room and player objects
+        const restoredRoom = {
+          roomCode: savedState.roomCode,
           players: savedState.players || []
-        }
-      });
-      
-      // Navigate to appropriate screen
-      if (savedState.gameStatus === 'active' && savedState.gameState) {
-        navigate(`/game/${savedState.roomCode}`);
+        };
+        
+        const restoredPlayer = {
+          id: savedState.playerId,
+          name: savedState.playerName,
+          sessionToken: savedState.sessionToken  // Include session token for secure reconnection
+        };
+        
+        dispatch({
+          type: 'RESTORE_STATE',
+          payload: {
+            currentRoom: restoredRoom,
+            currentPlayer: restoredPlayer,
+            gameState: savedState.gameState,
+            gameStatus: savedState.gameStatus || 'waiting',
+            players: savedState.players || []
+          }
+        });
+        
+        // Don't navigate - we're already on the correct route
       } else {
-        navigate(`/waiting-room/${savedState.roomCode}`);
+        console.log('📍 No matching saved state for URL roomCode:', urlRoomCode);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

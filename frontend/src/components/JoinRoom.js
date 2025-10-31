@@ -1,15 +1,50 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
 const JoinRoom = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { joinRoom, loading, error, clearError } = useGame();
   
-  const [roomCode, setRoomCode] = useState('');
-  const [playerName, setPlayerName] = useState('');
+  // Get roomCode from URL params if available
+  const roomCodeFromUrl = searchParams.get('roomCode') || '';
+  
+  // Check localStorage for previous name if joining the same room
+  const getSavedPlayerName = (roomCode) => {
+    if (!roomCode) return '';
+    try {
+      const saved = localStorage.getItem('anomia_game_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Only use saved name if it's for the same room code
+        if (parsed.roomCode && parsed.roomCode.toUpperCase() === roomCode.toUpperCase()) {
+          return parsed.playerName || '';
+        }
+      }
+    } catch (error) {
+      console.error('Error reading saved player name:', error);
+    }
+    return '';
+  };
+  
+  const [roomCode, setRoomCode] = useState(roomCodeFromUrl);
+  const [playerName, setPlayerName] = useState(getSavedPlayerName(roomCodeFromUrl));
+  
+  // Update roomCode and player name when URL param changes
+  useEffect(() => {
+    if (roomCodeFromUrl) {
+      const upperRoomCode = roomCodeFromUrl.toUpperCase();
+      setRoomCode(upperRoomCode);
+      // Pre-fill player name if they were in this room before
+      const savedName = getSavedPlayerName(upperRoomCode);
+      if (savedName) {
+        setPlayerName(savedName);
+      }
+    }
+  }, [roomCodeFromUrl]);
 
   const handleJoin = async () => {
     if (!roomCode.trim() || !playerName.trim()) return;
