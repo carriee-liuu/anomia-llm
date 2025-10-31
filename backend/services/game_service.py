@@ -113,16 +113,12 @@ class GameService:
                     "error": "Room not found"
                 }
             
-            # Check if game is already active (allow restart if game is completed)
+            # Check if game is already active
             if room_code in self.active_games:
-                existing_game = self.active_games[room_code]
-                if existing_game.status != GameStatus.COMPLETED:
-                    return {
-                        "success": False,
-                        "error": "Game already in progress"
-                    }
-                # Remove completed game to allow new game
-                del self.active_games[room_code]
+                return {
+                    "success": False,
+                    "error": "Game already in progress"
+                }
             
             # Create game object
             game = Game(
@@ -147,9 +143,7 @@ class GameService:
                 game.add_player(player)
             
             # Generate game deck
-            # Use test deck for quick testing (4 cards only)
-            game.deck = self._generate_test_deck(len(room["players"]))
-            # For production, use: game.deck = self._generate_initial_deck(len(room["players"]))
+            game.deck = self._generate_initial_deck(len(room["players"]))
             
             # In Anomia, players start with empty decks and get cards by flipping
             # No initial card dealing - players flip cards during their turns
@@ -219,21 +213,10 @@ class GameService:
                 game.current_wild_card = player_top_card
                 logger.info(f"Wild card now active in center: {player_top_card.category}")
             
-            # Check if deck is empty - if so, end the game
+            # Draw a new card for the player
             if len(game.deck) == 0:
-                # Deck is empty - end the game
-                logger.info(f"Deck is empty - ending game for room {room_code}")
-                self.end_game(room_code)
-                
-                # Get the final game state with winner info
-                final_game_state = game.to_dict()
-                
-                return {
-                    "success": True,
-                    "gameState": final_game_state,
-                    "message": "Game over! The deck has been exhausted.",
-                    "gameEnded": True
-                }
+                # Reshuffle deck if empty
+                game.deck = self._generate_initial_deck(len(game.players))
             
             new_card = game.deck.pop(0)
             logger.info(f"🃏 Card drawn: {new_card.category} (is_wild: {new_card.is_wild}, shape: {new_card.shape})")
@@ -457,18 +440,17 @@ class GameService:
             return False
     
     def _generate_test_deck(self, player_count: int) -> List[Card]:
-        """Generate a minimal test deck with only 4 cards for quick testing"""
+        """Generate a test deck with all 8 shapes for design testing"""
         deck = []
         
-        # Create only 4 cards for quick testing
-        test_cards = [
-            ("circle", "Circle Shape"),
-            ("square", "Square Shape"),
-            ("diamond", "Diamond Shape"),
-            ("asterisk", "Asterisk Shape"),
+        # Create cards for each of the 8 shapes for design testing
+        all_shapes = ["circle", "square", "plus", "waves", "diamond", "asterisk", "dots", "equals"]
+        test_categories = [
+            "Circle Shape", "Square Shape", "Plus Shape", "Waves Shape", 
+            "Diamond Shape", "Asterisk Shape", "Dots Shape", "Equals Shape"
         ]
         
-        for shape_name, category in test_cards:
+        for shape_name, category in zip(all_shapes, test_categories):
             card = Card(
                 id=str(uuid.uuid4()),
                 shape=CardShape[shape_name.upper()],
@@ -477,17 +459,33 @@ class GameService:
             )
             deck.append(card)
         
-        logger.info(f"Generated test deck with {len(deck)} cards (4 cards total for quick testing)")
+        # Add a wild card for testing
+        wild_card = Card(
+            id=str(uuid.uuid4()),
+            shape=CardShape.WILD,
+            category="Wild Card",
+            is_wild=True,
+            wild_shapes=[CardShape.CIRCLE, CardShape.SQUARE]
+        )
+        deck.append(wild_card)
+        
+        logger.info(f"Generated test deck with {len(deck)} cards (8 shape cards + 1 wild card)")
         
         return deck
     
     def _generate_initial_deck(self, player_count: int) -> List[Card]:
-        """Generate initial deck of Anomia cards with LLM-generated categories"""
+        """Generate initial deck of Anomia cards with LLM-generated categories
+        If more than 8 players, generate 2 decks to ensure enough cards"""
         deck = []
         
-        # Calculate total categories needed (excluding wild cards)
-        total_categories_needed = sum(count for shape_name, count in self.cards_per_shape.items() if shape_name != "wild")
-        logger.info(f"Generating {total_categories_needed} total categories for deck")
+        # Use 2 decks if player count exceeds 8
+        num_decks = 2 if player_count > 8 else 1
+        logger.info(f"Generating {num_decks} deck(s) for {player_count} players")
+        
+        # Calculate total categories needed per deck (excluding wild cards)
+        categories_per_deck = sum(count for shape_name, count in self.cards_per_shape.items() if shape_name != "wild")
+        total_categories_needed = categories_per_deck * num_decks
+        logger.info(f"Generating {total_categories_needed} total categories for {num_decks} deck(s)")
         
         # Generate all categories in one LLM call
         all_categories = []
@@ -507,46 +505,48 @@ class GameService:
             # No LLM service available, use fallback
             all_categories = self._get_fallback_categories(total_categories_needed)
         
-        # Distribute categories across shapes
-        category_index = 0
-        
-        # Generate cards for each shape with consistent distribution
-        for shape_name, count in self.cards_per_shape.items():
-            if shape_name == "wild":
-                # Generate wild cards
-                for i in range(count):
-                    wild_shapes = random.sample(self.shapes, 2)  # Pick 2 different shapes
+        # Generate the requested number of decks
+        for deck_num in range(num_decks):
+            # Distribute categories across shapes for this deck
+            category_index = deck_num * categories_per_deck
+            
+            # Generate cards for each shape with consistent distribution
+            for shape_name, count in self.cards_per_shape.items():
+                if shape_name == "wild":
+                    # Generate wild cards
+                    for i in range(count):
+                        wild_shapes = random.sample(self.shapes, 2)  # Pick 2 different shapes
+                        
+                        card = Card(
+                            id=str(uuid.uuid4()),
+                            shape=CardShape.WILD,
+                            category="Wild Card",
+                            is_wild=True,
+                            wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
+                        )
+                        deck.append(card)
+                else:
+                    # Generate regular cards for this shape
+                    shape = CardShape[shape_name.upper()]
                     
-                    card = Card(
-                        id=str(uuid.uuid4()),
-                        shape=CardShape.WILD,
-                        category="Wild Card",
-                        is_wild=True,
-                        wild_shapes=[CardShape[shape.upper()] for shape in wild_shapes]
-                    )
-                    deck.append(card)
-            else:
-                # Generate regular cards for this shape
-                shape = CardShape[shape_name.upper()]
-                
-                # Create cards for this shape using pre-generated categories
-                for i in range(count):
-                    if category_index < len(all_categories):
-                        category = all_categories[category_index]
-                        category_index += 1
-                    else:
-                        # Fallback if we run out of categories
-                        category = random.choice(self.fallback_categories)
-                    
-                    card = Card(
-                        id=str(uuid.uuid4()),
-                        shape=shape,
-                        category=category,
-                        is_wild=False
-                    )
-                    deck.append(card)
+                    # Create cards for this shape using pre-generated categories
+                    for i in range(count):
+                        if category_index < len(all_categories):
+                            category = all_categories[category_index]
+                            category_index += 1
+                        else:
+                            # Fallback if we run out of categories
+                            category = random.choice(self.fallback_categories)
+                        
+                        card = Card(
+                            id=str(uuid.uuid4()),
+                            shape=shape,
+                            category=category,
+                            is_wild=False
+                        )
+                        deck.append(card)
         
-        logger.info(f"Generated complete deck with {len(deck)} cards using {len(all_categories)} LLM categories")
+        logger.info(f"Generated complete deck with {len(deck)} cards ({num_decks} deck(s)) using {len(all_categories)} LLM categories")
         
         # Shuffle deck
         return self._shuffle_deck(deck)

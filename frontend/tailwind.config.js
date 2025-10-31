@@ -5,6 +5,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["'Courier Prime'", "'Courier New'", 'monospace'],
+        heading: ["'Press Start 2P'", "'Courier New'", 'monospace'],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

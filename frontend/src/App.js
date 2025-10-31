@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Import components
 import HomeScreen from './components/HomeScreen';
+import CreateRoom from './components/CreateRoom';
+import JoinRoom from './components/JoinRoom';
 import Lobby from './components/Lobby';
 import GamePlay from './components/GamePlay';
 
@@ -30,6 +32,32 @@ function App() {
                     transition={{ duration: 0.5 }}
                   >
                     <HomeScreen />
+                  </motion.div>
+                } 
+              />
+              <Route 
+                path="/create" 
+                element={
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <CreateRoom />
+                  </motion.div>
+                } 
+              />
+              <Route 
+                path="/join" 
+                element={
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <JoinRoom />
                   </motion.div>
                 } 
               />

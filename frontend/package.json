@@ -5,6 +5,7 @@
   "homepage": "https://carriee-liuu.github.io/anomia-llm",
   "private": true,
   "dependencies": {
+    "@fontsource/courier-prime": "^5.2.8",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",

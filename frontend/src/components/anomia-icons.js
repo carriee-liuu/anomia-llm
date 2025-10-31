@@ -94,20 +94,34 @@ const getRetroColors = (baseColor) => {
       shadow: '#ffffff',
       glow: '#ffffff',
       dropShadow: 'rgba(0, 0, 0, 0.3)'
+    },
+    'oklch(0.95 0.02 60)': { // Beige background color
+      fill: '#F9ECE2',
+      stroke: '#F9ECE2',
+      shadow: '#F5E4D9',
+      glow: '#FDF5EF',
+      dropShadow: 'rgba(0, 0, 0, 0.1)'
+    },
+    '#F9ECE2': { // Beige background color (hex variant)
+      fill: '#F9ECE2',
+      stroke: '#F9ECE2',
+      shadow: '#F5E4D9',
+      glow: '#FDF5EF',
+      dropShadow: 'rgba(0, 0, 0, 0.1)'
     }
   };
   return colorMap[baseColor] || colorMap['#ffffff'] || { fill: '#ffffff', stroke: '#ffffff', shadow: '#ffffff', glow: '#ffffff', dropShadow: 'rgba(0, 0, 0, 0.3)' };
 };
 
 export const CircleIcon = ({ size = 80, className = "", color = "#22C55E" }) => {
-  // Support both new Figma colors and existing colors
-  const colorToUse = color === '#22C55E' ? '#22C55E' : color === '#3B82F6' ? '#3B82F6' : color || '#22C55E';
+  // Support both new Figma colors and existing colors, including OKLCH
+  const colorToUse = color || '#22C55E';
   const colors = getRetroColors(colorToUse);
   const centerX = size / 2;
   const centerY = size / 2;
   const strokeWidth = Math.max(2, size * 0.08);
   const shadowOffset = Math.max(1, size * 0.02);
-  const filterId = `retroGlow-circle-${size}-${colorToUse.replace('#', '')}`;
+  const filterId = `retroGlow-circle-${size}-${String(colorToUse).replace(/[^a-zA-Z0-9]/g, '')}`;
   
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={className}>
@@ -379,8 +393,9 @@ export const PlusIcon = ({ size = 80, className = "", color = "#9333EA" }) => {
 };
 
 export const WavesIcon = ({ size = 80, className = "", color = "#06B6D4" }) => {
-  const colors = getRetroColors(color || '#06B6D4');
-  const filterId = `retroGlow-waves-${size}-${(color || '#06B6D4').replace('#', '')}`;
+  const colorToUse = color || '#06B6D4';
+  const colors = getRetroColors(colorToUse);
+  const filterId = `retroGlow-waves-${size}-${String(colorToUse).replace(/[^a-zA-Z0-9]/g, '')}`;
   const centerX = size / 2;
   const centerY = size / 2;
   const strokeWidth = Math.max(2, size * 0.08);

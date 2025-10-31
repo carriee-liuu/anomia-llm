@@ -411,7 +411,7 @@ const GamePlay = () => {
                   <div key={player.id} className="flex flex-col items-center">
                     <div className={`w-8 h-8 md:w-10 md:h-10 border-[3px] border-foreground flex items-center justify-center text-sm md:text-base font-heading text-center ${
                       player.id === currentPlayer?.id ? 'bg-accent text-white' : 
-                      'bg-secondary text-foreground'
+                      'bg-background text-foreground'
                     }`}>
                       {player.score}
                     </div>
@@ -435,16 +435,16 @@ const GamePlay = () => {
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
-          <div className="bg-gradient-to-br from-[oklch(0.75_0.15_60/0.85)] via-[oklch(0.65_0.2_350/0.85)] to-[oklch(0.55_0.18_310/0.85)] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] py-2 px-3 rounded-sm backdrop-blur-sm">
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-[10px] md:text-xs font-heading text-white uppercase tracking-wide">
-                Wild Card:
-              </span>
-              <div className="bg-background/90 border-[2px] border-foreground/80 rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
+          <div className="bg-[rgba(166,27,134,0.05)] border-[3px] border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] p-1 flex items-center justify-center gap-4 h-[61px]">
+            <span className="text-[9px] font-heading text-primary uppercase tracking-[0.9px]">
+              Wild Card
+            </span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 flex items-center justify-center">
                 {gameState?.currentWildCard?.wild_shapes?.[0] ? (
                   <AnomiaShape 
                     shape={gameState.currentWildCard.wild_shapes[0]} 
-                    size={28} 
+                    size={32} 
                     color={
                       gameState.currentWildCard.wild_shapes[0] === 'circle' ? '#3B82F6' :
                       gameState.currentWildCard.wild_shapes[0] === 'square' ? '#E8A54A' :
@@ -461,12 +461,12 @@ const GamePlay = () => {
                   <span className="text-foreground">?</span>
                 )}
               </div>
-              <span className="text-sm md:text-base font-heading text-white">=</span>
-              <div className="bg-background/90 border-[2px] border-foreground/80 rounded-sm w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-lg md:text-xl font-bold">
+              <span className="text-lg font-heading text-primary">=</span>
+              <div className="w-8 h-8 flex items-center justify-center">
                 {gameState?.currentWildCard?.wild_shapes?.[1] ? (
                   <AnomiaShape 
                     shape={gameState.currentWildCard.wild_shapes[1]} 
-                    size={28} 
+                    size={32} 
                     color={
                       gameState.currentWildCard.wild_shapes[1] === 'circle' ? '#3B82F6' :
                       gameState.currentWildCard.wild_shapes[1] === 'square' ? '#E8A54A' :
