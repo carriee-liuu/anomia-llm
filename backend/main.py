@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -12,6 +12,7 @@ from datetime import datetime
 from services.room_service import RoomService
 from services.game_service import GameService
 from services.llm_service import LLMService
+from services.slack_build_service import handle_slack_build_request, verify_slack_signature
 from models.game_models import GameStatus
 
 # Configure logging
@@ -67,6 +68,66 @@ async def health_check():
         "message": "Anomia LLM Python Backend Running",
         "timestamp": datetime.now().isoformat()
     }
+
+
+@app.post("/slack/events")
+async def slack_events(request: Request, background_tasks: BackgroundTasks):
+    """
+    Slack Events API endpoint.
+
+    - Verifies Slack request signature (SLACK_SIGNING_SECRET).
+    - Handles URL verification challenge.
+    - Handles app mentions like: "@cursor build frontend main"
+    """
+    # Slack retries can cause duplicate events; acknowledge quickly.
+    if request.headers.get("x-slack-retry-num"):
+        return {"ok": True}
+
+    raw_body = await request.body()
+    signing_secret = os.getenv("SLACK_SIGNING_SECRET", "")
+    if not signing_secret:
+        raise HTTPException(status_code=500, detail="SLACK_SIGNING_SECRET is not set")
+
+    timestamp = request.headers.get("x-slack-request-timestamp", "")
+    signature = request.headers.get("x-slack-signature", "")
+    if not verify_slack_signature(
+        signing_secret=signing_secret,
+        timestamp=timestamp,
+        signature=signature,
+        raw_body=raw_body,
+    ):
+        raise HTTPException(status_code=401, detail="Invalid Slack signature")
+
+    try:
+        payload = json.loads(raw_body.decode("utf-8") or "{}")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    # Slack URL verification
+    if payload.get("type") == "url_verification":
+        return {"challenge": payload.get("challenge")}
+
+    if payload.get("type") != "event_callback":
+        return {"ok": True}
+
+    event = payload.get("event") or {}
+    event_type = event.get("type")
+
+    # Primary: @cursor ... (app_mention)
+    if event_type == "app_mention":
+        channel = event.get("channel")
+        text = event.get("text", "")
+        thread_ts = event.get("thread_ts") or event.get("ts")
+        if channel:
+            background_tasks.add_task(
+                handle_slack_build_request,
+                channel=channel,
+                thread_ts=thread_ts,
+                text=text,
+            )
+        return {"ok": True}
+
+    return {"ok": True}
 
 # LLM service status endpoint
 @app.get("/llm/status")
