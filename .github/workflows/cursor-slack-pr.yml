@@ -1,0 +1,96 @@
+name: Cursor Slack PR (Demo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      slack_channel:
+        description: "Slack channel ID to post result"
+        required: false
+        type: string
+      slack_thread_ts:
+        description: "Slack thread timestamp to reply in"
+        required: false
+        type: string
+      prompt:
+        description: "User ask (mention text)"
+        required: false
+        type: string
+      context:
+        description: "Slack thread context (compact text)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create demo change
+        run: |
+          mkdir -p .cursor/demo
+          cat > ".cursor/demo/slack_pr_${{ github.run_id }}.txt" <<'EOF'
+          Demo PR created from Slack mention.
+
+          Prompt:
+          ${{ inputs.prompt }}
+
+          Context:
+          ${{ inputs.context }}
+          EOF
+
+      - name: Commit changes
+        run: |
+          git config user.name "cursor-slack-bot"
+          git config user.email "cursor-slack-bot@users.noreply.github.com"
+          branch="cursor/slack-demo-${{ github.run_id }}"
+          git checkout -b "$branch"
+          git add .cursor/demo
+          git commit -m "demo: create PR from Slack mention"
+          git push --set-upstream origin "$branch"
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Demo: PR from Slack (@cursor)"
+          body="$(cat <<'EOF'
+          ## Summary
+          Demo PR automatically created from a Slack `@cursor` mention.
+
+          ## Prompt
+          ${{ inputs.prompt }}
+
+          ## Slack context
+          ${{ inputs.context }}
+          EOF
+          )"
+          pr_url="$(gh pr create --title "$title" --body "$body")"
+          echo "PR_URL=$pr_url" >> "$GITHUB_ENV"
+
+      - name: Post back to Slack (optional)
+        if: ${{ inputs.slack_channel != '' && secrets.SLACK_BOT_TOKEN != '' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel }}
+          SLACK_THREAD_TS: ${{ inputs.slack_thread_ts }}
+          PR_URL: ${{ env.PR_URL }}
+        run: |
+          payload=$(cat <<EOF
+          {
+            "channel": "${SLACK_CHANNEL}",
+            "text": "PR created: ${PR_URL}",
+            "thread_ts": "${SLACK_THREAD_TS}"
+          }
+          EOF
+          )
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "${payload}" \
+            https://slack.com/api/chat.postMessage

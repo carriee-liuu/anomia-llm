@@ -117,7 +117,7 @@ async def slack_events(request: Request, background_tasks: BackgroundTasks):
     if event_type == "app_mention":
         channel = event.get("channel")
         text = event.get("text", "")
-        thread_ts = event.get("ts")
+        thread_ts = event.get("thread_ts") or event.get("ts")
         if channel:
             background_tasks.add_task(
                 handle_slack_build_request,

@@ -4,7 +4,7 @@ import hmac
 import json
 import os
 import time
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 
@@ -43,26 +43,27 @@ def verify_slack_signature(
     return hmac.compare_digest(expected, signature or "")
 
 
-def parse_cursor_mention_command(text: str) -> Tuple[Optional[str], str]:
+def parse_cursor_mention_command(text: str) -> Tuple[str, Optional[str], str]:
     """
-    Returns (workflow_file, ref).
+    Returns (mode, workflow_file, ref).
 
     Supported:
       - "build frontend [ref]"
       - "deploy frontend [ref]"
       - "build ci [ref]"
+      - "take a stab" / "create a pr" / "make a pr" / "open a pr"
       - "help"
 
     The text usually includes "<@BOTID>" mention; we strip all "<@...>" tokens.
     """
     ref = "main"
     if not text:
-        return None, ref
+        return "help", None, ref
 
     # Remove mention tokens like "<@U123ABC>"
     parts = [p for p in text.split() if not (p.startswith("<@") and p.endswith(">"))]
     if not parts:
-        return None, ref
+        return "help", None, ref
 
     # Allow "ref=branch" anywhere
     normalized = []
@@ -73,10 +74,23 @@ def parse_cursor_mention_command(text: str) -> Tuple[Optional[str], str]:
             normalized.append(p.lower())
 
     if not normalized:
-        return None, ref
+        return "help", None, ref
 
     if normalized[0] in {"help", "?"}:
-        return None, ref
+        return "help", None, ref
+
+    # Heuristic: PR-request phrasing anywhere in message
+    joined = " ".join(normalized)
+    if (
+        "take a stab" in joined
+        or "create a pr" in joined
+        or "make a pr" in joined
+        or "open a pr" in joined
+        or "create pr" in joined
+        or "make pr" in joined
+        or "open pr" in joined
+    ):
+        return "pr", "cursor-slack-pr.yml", ref
 
     # e.g. "build frontend"
     action = normalized[0]
@@ -86,11 +100,11 @@ def parse_cursor_mention_command(text: str) -> Tuple[Optional[str], str]:
         ref = parts[2]
 
     if action in {"build", "deploy"} and target in {"frontend", "fe"}:
-        return "deploy-frontend.yml", ref
+        return "build", "deploy-frontend.yml", ref
     if action == "build" and target in {"ci", "pipeline"}:
-        return "ci-cd.yml", ref
+        return "build", "ci-cd.yml", ref
 
-    return None, ref
+    return "help", None, ref
 
 
 async def dispatch_github_workflow(
@@ -100,6 +114,7 @@ async def dispatch_github_workflow(
     workflow_file: str,
     ref: str,
     github_token: str,
+    inputs: Optional[Dict[str, str]] = None,
 ) -> None:
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
     headers = {
@@ -108,7 +123,9 @@ async def dispatch_github_workflow(
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "cursor-slack-build-bot",
     }
-    payload = {"ref": ref}
+    payload: Dict[str, Any] = {"ref": ref}
+    if inputs:
+        payload["inputs"] = inputs
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
         # GitHub returns 204 No Content on success
@@ -165,6 +182,38 @@ async def slack_post_message(
             raise RuntimeError(f"Slack postMessage failed ({resp.status_code}): {resp.text}")
 
 
+async def slack_get_thread_context_text(
+    *,
+    bot_token: str,
+    channel: str,
+    thread_ts: str,
+    limit: int = 20,
+) -> str:
+    """
+    Fetches thread replies and returns a compact text summary.
+    Requires Slack scopes: channels:history/groups:history/im:history/mpim:history (depending on channel type).
+    """
+    url = "https://slack.com/api/conversations.replies"
+    headers = {"Authorization": f"Bearer {bot_token}"}
+    params = {"channel": channel, "ts": thread_ts, "limit": limit}
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        resp = await client.get(url, headers=headers, params=params)
+        data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+        if resp.status_code != 200 or not data.get("ok"):
+            # If we can't read history, return empty context (demo-friendly)
+            return ""
+        messages: List[Dict[str, Any]] = data.get("messages") or []
+        lines: List[str] = []
+        for m in messages[-limit:]:
+            txt = (m.get("text") or "").strip()
+            if not txt:
+                continue
+            user = m.get("user") or m.get("username") or "unknown"
+            ts = m.get("ts") or ""
+            lines.append(f"- ({ts}) {user}: {txt}")
+        return "\n".join(lines)
+
+
 async def handle_slack_build_request(
     *,
     channel: str,
@@ -185,12 +234,13 @@ async def handle_slack_build_request(
     if not owner or not repo:
         raise RuntimeError("Set GITHUB_OWNER and GITHUB_REPO (or GITHUB_REPOSITORY).")
 
-    workflow_file, ref = parse_cursor_mention_command(text)
+    mode, workflow_file, ref = parse_cursor_mention_command(text)
     if not workflow_file:
         usage = (
             "Usage:\n"
             "- `@cursor build frontend [ref]`\n"
             "- `@cursor build ci [ref]`\n"
+            "- `@cursor can you take a stab at this and create a pr?`\n"
             "Examples:\n"
             "- `@cursor build frontend main`\n"
             "- `@cursor build ci ref=develop`"
@@ -198,20 +248,53 @@ async def handle_slack_build_request(
         await slack_post_message(bot_token=slack_bot_token, channel=channel, text=usage, thread_ts=thread_ts)
         return
 
-    await slack_post_message(
-        bot_token=slack_bot_token,
-        channel=channel,
-        text=f"Starting `{workflow_file}` on `{ref}`…",
-        thread_ts=thread_ts,
-    )
+    if mode == "build":
+        await slack_post_message(
+            bot_token=slack_bot_token,
+            channel=channel,
+            text=f"Starting `{workflow_file}` on `{ref}`…",
+            thread_ts=thread_ts,
+        )
 
-    await dispatch_github_workflow(
-        owner=owner,
-        repo=repo,
-        workflow_file=workflow_file,
-        ref=ref,
-        github_token=github_token,
-    )
+        await dispatch_github_workflow(
+            owner=owner,
+            repo=repo,
+            workflow_file=workflow_file,
+            ref=ref,
+            github_token=github_token,
+        )
+    else:
+        # PR demo flow: include Slack context and ask text as workflow inputs.
+        effective_thread_ts = thread_ts
+        context_text = ""
+        if effective_thread_ts:
+            context_text = await slack_get_thread_context_text(
+                bot_token=slack_bot_token,
+                channel=channel,
+                thread_ts=effective_thread_ts,
+                limit=20,
+            )
+
+        await slack_post_message(
+            bot_token=slack_bot_token,
+            channel=channel,
+            text="Taking a stab and opening a PR…",
+            thread_ts=thread_ts,
+        )
+
+        await dispatch_github_workflow(
+            owner=owner,
+            repo=repo,
+            workflow_file=workflow_file,
+            ref=ref,
+            github_token=github_token,
+            inputs={
+                "slack_channel": channel,
+                "slack_thread_ts": effective_thread_ts or "",
+                "prompt": text[:1000],
+                "context": context_text[:8000],
+            },
+        )
 
     # Give GitHub a moment to create the run record
     await asyncio.sleep(1.5)
